@@ -1,0 +1,22 @@
+{
+  "name": "likwid-docs",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "vitepress dev docs",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs",
+    "migrate": "node scripts/migrate-gitbook.mjs",
+    "check:links": "node scripts/check-internal-links.mjs",
+    "check:slugs": "node scripts/check-slugs.mjs",
+    "check:gitbook": "node scripts/check-no-gitbook-assets.mjs",
+    "validate": "npm run check:slugs && npm run check:links && npm run check:gitbook"
+  },
+  "devDependencies": {
+    "markdown-it-mathjax3": "^4.3.2",
+    "vitepress": "^1.6.3"
+  }
+}
