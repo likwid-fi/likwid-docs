@@ -12,7 +12,6 @@ This repository hosts the standalone Likwid documentation site built with VitePr
 
 ```bash
 npm install
-npm run migrate
 npm run validate
 npm run build
 npm run dev
@@ -24,7 +23,7 @@ npm run dev
 docs/
   .vitepress/          VitePress config and theme customizations
   public/              Static assets and Cloudflare redirect rules
-  whitepaper/          Migrated protocol docs
+  whitepaper/          Protocol docs
   tokenomics/
   product/
   integration/
@@ -32,18 +31,8 @@ docs/
   support/
   legal/
 scripts/
-  migration-plan.mjs   Route plan, sidebar structure, redirects
-  migrate-gitbook.mjs  One-shot GitBook migration script
   check-*.mjs          CI validation scripts
 ```
-
-## Migration Workflow
-
-1. Freeze edits in GitBook.
-2. Run `npm run migrate` to refresh the local Markdown, assets, redirects, and migration report from the public GitBook site.
-3. Review `reports/migration-report.json` for unexpected pages, missing pages, and manual review items.
-4. Run `npm run validate` and `npm run build`.
-5. Open a PR and use the Cloudflare Pages preview deployment for QA.
 
 ## Cloudflare Pages
 
@@ -61,6 +50,5 @@ If the production domain is not `docs.likwid.fi`, update `DOCS_SITE_URL` in Clou
 
 - Add or edit Markdown files inside `docs/`.
 - Keep binary assets in `docs/public/`.
-- Use root-relative links for shared assets, for example `/assets/gitbook/...`.
-- If GitBook is still the temporary source of truth, rerun `npm run migrate` instead of hand-copying pages.
-- If the GitBook sitemap changes, update `scripts/migration-plan.mjs` before rerunning the migration.
+- Use root-relative links for shared assets, for example `/assets/brand-kit/...` or `/assets/v2/...`.
+- Run `npm run validate` before opening a PR.
