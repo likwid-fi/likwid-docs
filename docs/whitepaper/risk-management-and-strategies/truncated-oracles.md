@@ -1,21 +1,23 @@
 ---
 title: "Truncated Oracles"
-description: "The truncated oracle is another major theoretical innovation by Uniswap. It uses a geometric mean formula to record the prices of assets within Uniswap liquidity pools and then app"
+description: "In Likwid v2.2, truncated reserves act as a bounded internal price reference that moves toward pair reserves at a protocol-defined speed."
 ---
 
-The truncated oracle is another major theoretical innovation by Uniswap. It uses a geometric mean formula to record the prices of assets within Uniswap liquidity pools and then applies a truncation mechanism to the oracle feed. This means that **within a single block**, **the recorded price can only move up or down to a predefined maximum limit.**
+In Likwid v2.2, the term "truncated oracle" is best understood as an internal bounded price reference derived from pool reserves. The protocol keeps both live pair reserves and truncated reserves. Over time, truncated reserves move toward the live pair state at a speed limited by `priceMoveSpeedPPM`, preventing the reference from instantly snapping to every short-term reserve shock.
 
 ![](/assets/gitbook/spaces-2FdZGvDixUA5eWtjX2MfjG-2Fuploads-2FBoTDnVCjZj9Kr5zDstWX-2Fimage-8c2205b66e.png)
 
-For instance, in an ETH/USDC trading pair with a 2% block price cap:
+For example, if an ETH/USDC pool experiences an abrupt one-block jump, truncated reserves can lag that move intentionally. This means:
 
-* If the price jumps from 4000 USDC to 4500 USDC within one block due to manipulation, the oracle price would be truncated at 4080 USDC, preventing margin liquidations for leveraged long positions.
-* In contrast, using TWAP or VWAP, the manipulated price could average to 4200 USDC, unfairly triggering liquidations.
-* If the spike to 4500 USDC is genuine and sustained (oh, how I wish this would happen), the oracle price would catch up within six blocks, allowing fair liquidation for positions below 4200 USDC. Even in this scenario, using off-chain oracles wouldn’t avoid losses. CEXs, oracles, and platforms alike would incur similar impacts during genuine price surges.
+* liquidation and fee logic can reference a bounded reserve view instead of the most abrupt possible price print
+* short-lived reserve shocks do not immediately dominate every downstream calculation
+* sustained market moves still propagate into the truncated reference over time
 
-#### Cross-Section Oracle Catch-Up Algorithm
+This mechanism is internal to the vault's price-protection logic; it is not a third-party oracle service.
 
-To model how the oracle price catches up with real market prices over time, we uses the following **Cross-Section Price Tracking Algorithm**:
+#### Cross-Section Catch-Up Model
+
+To describe how the bounded reference catches up with live market state over time, we use the following conceptual model:
 
 1. **Relative Price Difference**\
    The percentage deviation between the oracle and actual market price:
@@ -24,8 +26,8 @@ To model how the oracle price catches up with real market prices over time, we u
    R_p = \frac{|P_o - P_a|}{P_o}
    $$
 
-   * ( P\_o ): Oracle-reported price
-   * ( P\_a ): Actual (external or on-chain) price
+   * ( P\_o ): Truncated reference price
+   * ( P\_a ): Current pair-reserve-implied price
 2. **Catch-Up Time Relation**\
    The relation between time and price deviation follows a quadratic form:
 
@@ -34,8 +36,8 @@ To model how the oracle price catches up with real market prices over time, we u
    $$
 
    * ( T ): Time (in seconds or blocks, depending on implementation)
-   * ( K ): A configurable constant (currently set at **0.3%**)
-   * As ( T ) increases, the oracle price gradually **converges** with actual price
+   * ( K ): A configurable speed constant
+   * As ( T ) increases, the truncated reference gradually **converges** with current pair state
 
 ***
 

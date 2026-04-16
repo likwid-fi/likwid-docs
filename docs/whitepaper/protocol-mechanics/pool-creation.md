@@ -1,13 +1,22 @@
 ---
 title: "Pool Creation"
-description: "Likwid Protocol's liquidity provisioning system features a dual-path architecture anchored by a central routing module (\"Provide Liquidity For Lending & Margin\"). Liquidity Provide"
+description: "Pools in Likwid v2.2 are initialized in LikwidVault with swap-fee and margin-fee parameters, then accessed through pair, lend, and margin position managers."
 ---
 
-Likwid Protocol's liquidity provisioning system features a dual-path architecture anchored by a central routing module ("Provide Liquidity For Lending & Margin"). Liquidity Providers initiate flows that dynamically bifurcate based on chain compatibility:&#x20;
+Pool creation in Likwid v2.2 starts from `LikwidVault`. A pool is initialized once for an ordered currency pair, and every later liquidity, lending, and margin action settles against that same pool state.
 
-Funds route through the autonomous "Likwid Vault" which implements isolated lending markets with fallback safeguards like lToken conversions during liquidity shortages. This design enables seamless liquidity deployment across both mature and emerging blockchain ecosystems while maintaining consistent core functionality.​​
+The pool core is intentionally minimal: it stores pricing, fee, reserve, and insurance-fund state, while user-facing interactions are exposed through the position-manager contracts.
 
-Likwid's foundational trading pools are established  that configures essential parameters, including:
+The essential pool parameters are:
 
-* **Asset Pairing**: X and Y, the ERC-20 token.
-* **Fee Tiers**: While dynamic fees are central to the protocol, three predefined fee tiers are set for future adjustments based on market demands.
+* **Asset Pairing**: `currency0` and `currency1`, sorted by address in the vault.
+* **Swap Fee (`fee`)**: the base LP fee used by the swap engine.
+* **Margin Fee (`marginFee`)**: the fee collected on margin expansion.
+
+Once initialized, the same pool can be used by:
+
+* `LikwidPairPosition` for paired LP NFTs
+* `LikwidLendPosition` for single-sided lending NFTs
+* `LikwidMarginPosition` for leveraged margin NFTs
+
+Additional capital can also be donated to the pool's insurance fund to strengthen stress-event handling.

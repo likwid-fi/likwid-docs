@@ -1,12 +1,11 @@
 ---
 title: "References"
-description: "1. Uniswap V4 Whitepaper: Uniswap Labs. (2023). *Uniswap V4 Whitepaper*. \n2. Curve Finance Documentation: Curve Finance. (2023). *Curve Finance Interest Rate Model and Protocol Doc"
+description: "Primary references for the current documentation include the Likwid v2.2 contracts, deployed-address registry, and general AMM/lending background material."
 ---
 
-1. **Uniswap V4 Whitepaper**: Uniswap Labs. (2023). *Uniswap V4 Whitepaper*. <https://uniswap.org>
-2. **Curve Finance Documentation**: Curve Finance. (2023). *Curve Finance Interest Rate Model and Protocol Documentation*. <https://curve.fi>
-3. **Ethereum Improvement Proposals (EIPs)**: Ethereum Foundation. *Ethereum Improvement Proposals*. <https://eips.ethereum.org>
-4. **Aave Protocol Documentation**: Aave. (2023). *Aave Protocol v2/v3 Documentation*. <https://docs.aave.com>
-5. **Automated Market Maker Theory**: Buterin, V. (2017). *An Introduction to Automated Market Makers*. <https://vitalik.ca>
-6. **DeFi Risk Management Practices**: Kwon, J., & Larimer, D. (2022). *Principles of Decentralized Finance Risk Management*.
-7. **Hooks and Flexible Transaction Logic**: Smart Contract Design Documentation. (2024). *Custom Hooks and Lifecycle Logic in DeFi Protocols*.
+1. **Likwid Margin Source Code**: Likwid Finance. *likwid-margin v2.2 contracts and supporting libraries*. <https://github.com/likwid-fi/likwid-margin>
+2. **Likwid Contract Address Registry**: Likwid Finance. *Deployed contract addresses for Base, Ethereum, and Sepolia*. [/product/contract-address](/product/contract-address)
+3. **Curve Finance Documentation**: Curve Finance. *Interest rate model and protocol documentation*. <https://curve.fi>
+4. **Aave Protocol Documentation**: Aave. *Protocol documentation for utilization-based lending*. <https://docs.aave.com>
+5. **Automated Market Maker Theory**: Buterin, V. *An introduction to automated market makers*. <https://vitalik.ca>
+6. **Ethereum Improvement Proposals (EIPs)**: Ethereum Foundation. *Ethereum Improvement Proposals*. <https://eips.ethereum.org>

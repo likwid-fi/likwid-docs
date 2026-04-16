@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" fill="none">
+  <defs>
+    <style>
+      .bg { fill: #faf8f3; }
+      .panel { fill: #fff; stroke: #1f2937; stroke-width: 2; rx: 18; }
+      .green { fill: #e7f4e7; }
+      .blue { fill: #edf3ff; }
+      .gold { fill: #fff2d7; }
+      .title { font: 700 30px "Segoe UI", sans-serif; fill: #111827; }
+      .subtitle { font: 600 20px "Segoe UI", sans-serif; fill: #111827; }
+      .body { font: 500 17px "Segoe UI", sans-serif; fill: #1f2937; }
+      .line { stroke: #111827; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#111827"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1200" height="620" rx="28"/>
+  <text class="title" x="60" y="60">Margin Position Flow in v2.2</text>
+
+  <rect class="panel gold" x="60" y="160" width="220" height="120"/>
+  <text class="subtitle" x="95" y="205">User</text>
+  <text class="body" x="95" y="240">deposit collateral</text>
+
+  <rect class="panel blue" x="350" y="160" width="280" height="120"/>
+  <text class="subtitle" x="385" y="205">LikwidMarginPosition</text>
+  <text class="body" x="385" y="240">checks leverage, margin fee,</text>
+  <text class="body" x="385" y="268">and pool eligibility</text>
+
+  <rect class="panel green" x="700" y="120" width="390" height="200"/>
+  <text class="subtitle" x="735" y="165">LikwidVault</text>
+  <text class="body" x="735" y="205">updates pair reserves</text>
+  <text class="body" x="735" y="235">updates mirror reserves</text>
+  <text class="body" x="735" y="265">applies dynamic swap fee</text>
+  <text class="body" x="735" y="295">records insurance-fund impact</text>
+
+  <rect class="panel blue" x="350" y="380" width="280" height="140"/>
+  <text class="subtitle" x="385" y="425">Position NFT</text>
+  <text class="body" x="385" y="460">records owner, collateral,</text>
+  <text class="body" x="385" y="488">debt, and cumulative state</text>
+
+  <rect class="panel" x="700" y="380" width="390" height="140"/>
+  <text class="subtitle" x="735" y="425">Ongoing Risk Controls</text>
+  <text class="body" x="735" y="460">margin-level checks</text>
+  <text class="body" x="735" y="488">repay / close / liquidate paths</text>
+
+  <path class="line" d="M280 220 H330"/>
+  <path class="line" d="M630 220 H680"/>
+  <path class="line" d="M895 320 V360"/>
+  <path class="line" d="M700 450 H650"/>
+  <path class="line" d="M490 280 V360"/>
+
+  <text class="body" x="110" y="330">max leverage and health checks</text>
+</svg>

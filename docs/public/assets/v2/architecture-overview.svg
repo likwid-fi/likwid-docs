@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" fill="none">
+  <defs>
+    <style>
+      .bg { fill: #f7f7f2; }
+      .panel { fill: #ffffff; stroke: #1f2937; stroke-width: 2; rx: 20; }
+      .primary { fill: #e8f1e8; }
+      .secondary { fill: #eef2ff; }
+      .accent { fill: #fff1d6; }
+      .title { font: 700 30px "Segoe UI", sans-serif; fill: #111827; }
+      .subtitle { font: 600 20px "Segoe UI", sans-serif; fill: #111827; }
+      .body { font: 500 18px "Segoe UI", sans-serif; fill: #1f2937; }
+      .small { font: 500 16px "Segoe UI", sans-serif; fill: #374151; }
+      .line { stroke: #111827; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#111827"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="760" rx="28"/>
+
+  <text class="title" x="60" y="60">Likwid v2.2 Architecture Overview</text>
+
+  <rect class="panel accent" x="60" y="110" width="240" height="170"/>
+  <text class="subtitle" x="92" y="155">Users / LPs</text>
+  <text class="body" x="92" y="195">Pair LPs</text>
+  <text class="body" x="92" y="225">Single-Sided Lenders</text>
+  <text class="body" x="92" y="255">Margin Traders</text>
+
+  <rect class="panel secondary" x="360" y="110" width="280" height="120"/>
+  <text class="subtitle" x="390" y="155">LikwidPairPosition</text>
+  <text class="small" x="390" y="190">paired LP position NFTs</text>
+
+  <rect class="panel secondary" x="360" y="270" width="280" height="120"/>
+  <text class="subtitle" x="390" y="315">LikwidLendPosition</text>
+  <text class="small" x="390" y="350">single-sided lending NFTs</text>
+
+  <rect class="panel secondary" x="360" y="430" width="280" height="120"/>
+  <text class="subtitle" x="390" y="475">LikwidMarginPosition</text>
+  <text class="small" x="390" y="510">margin position NFTs</text>
+
+  <rect class="panel primary" x="720" y="190" width="360" height="250"/>
+  <text class="subtitle" x="760" y="235">LikwidVault</text>
+  <text class="body" x="760" y="280">Pool initialization</text>
+  <text class="body" x="760" y="315">Swap fee + margin fee accounting</text>
+  <text class="body" x="760" y="350">Pair / lend / mirror reserves</text>
+  <text class="body" x="760" y="385">Protocol interest + insurance funds</text>
+
+  <rect class="panel" x="720" y="500" width="360" height="180"/>
+  <text class="subtitle" x="760" y="545">Native Risk Controls</text>
+  <text class="body" x="760" y="590">Dynamic fees via truncated reserves</text>
+  <text class="body" x="760" y="625">Utilization-based lending rates</text>
+  <text class="body" x="760" y="660">Liquidation + insurance fund logic</text>
+
+  <path class="line" d="M300 195 H340"/>
+  <path class="line" d="M300 225 H340"/>
+  <path class="line" d="M300 255 H340"/>
+
+  <path class="line" d="M640 170 H700"/>
+  <path class="line" d="M640 330 H700"/>
+  <path class="line" d="M640 490 H700"/>
+
+  <path class="line" d="M900 440 V480"/>
+
+  <text class="small" x="92" y="330">All public entrypoints settle</text>
+  <text class="small" x="92" y="355">through vault-managed pool state.</text>
+</svg>

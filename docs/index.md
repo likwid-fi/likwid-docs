@@ -1,36 +1,37 @@
 ---
 title: "Introduction"
-description: "The Likwid Protocol marks an important step towards a fully decentralized derivatives protocol in the field of decentralized finance (DeFi). Most existing derivatives solutions rel"
+description: "Likwid v2.2 is a vault-centric leverage and lending protocol built around LikwidVault, position-manager NFTs, native fee controls, and internal risk accounting."
 ---
 
 #### Abstract
 
-The Likwid Protocol marks an important step towards a fully decentralized derivatives protocol in the field of decentralized finance (DeFi). Most existing derivatives solutions rely on centralized platforms or oracles, introducing counterparty risks and potential market manipulation. Likwid Protocol provides a fully decentralized derivatives mechanism that requires neither counterparties nor oracles, greatly enhancing user flexibility in risk management and asset allocation. Likwid Protocol uses a pooled funds model, meaning that the liquidity provided by users is consolidated into a shared pool, and other users can borrow these funds for short-selling or leveraged trading. With this pooled mechanism, loans do not need to be matched individually between borrowers and lenders but instead rely on the total liquidity in the pool and users' collateral. This model allows for instant loan operations based on the pool’s status, maximizing capital efficiency.
+Likwid v2.2 is a decentralized leverage and lending protocol built around a shared pool model. Instead of matching individual counterparties, liquidity is managed inside `LikwidVault`, while position-manager contracts expose user-facing actions for paired liquidity, single-sided lending, and leveraged margin positions. This architecture keeps execution on-chain and concentrates protocol risk controls in audited pool state and manager logic.
 
-The Likwid protocol is designed to facilitate complex derivatives operations, including buying, selling, and shorting of a third-party ERC-20 token Y, with the base token X as the counter asset. Likwid maximizes flexibility, capital efficiency, and operational transparency. This integration harnesses  innovative design features—such, such as  singleton pool management, and dynamic fee structures—to support a sophisticated DeFi ecosystem, enabling custom swap logic, adaptive fee algorithms, and flexible accounting practices.
+The protocol is designed for trading, borrowing, and leveraged exposure on ERC-20 asset pairs. Liquidity providers and lenders supply capital into the same vault-managed system, while traders open positions through NFT-based managers that track ownership, debt, collateral, and accrued value over time. Fees, interest, liquidation thresholds, and price-protection mechanisms are handled natively by the protocol's own contracts and libraries.
 
 #### Protocol Overview
 
-The following diagram illustrates the overall architecture of the Likwid Protocol.
+The following diagram illustrates the v2.2 public architecture.
 
-![](/assets/gitbook/spaces-2FdZGvDixUA5eWtjX2MfjG-2Fuploads-2FVsdAy1o3UOWEpGX3bynX-2Ffile.excalidraw-3972b6eddd.svg)
+![](/assets/v2/architecture-overview.svg)
 
 #### Role of Liquidity Providers
 
-In the Likwid Protocol, liquidity providers play a crucial role. They contribute funds by depositing cryptocurrency assets into the liquidity pool(Likwid vault). Besides provide liquidity for swap and margin,these funds can be borrowed by other users, and liquidity providers earn interest in return. Likwid's design ensures that interest rates are adjusted algorithmically to reflect the pool's utilization and market conditions. Specifically:
+In Likwid v2.2, liquidity providers can participate through two different manager layers:
 
-* **Dynamic Rate Adjustment**: The interest rate earned by liquidity providers depends on the amount of available funds in the pool. As funds are borrowed, the available liquidity in the pool decreases, causing interest rates to rise to incentivize more users to provide liquidity.
-* **Fee Rewards**: In addition to interest income, the protocol distributes a portion of the fees generated from derivatives transactions as rewards to liquidity providers.
-* **Stable Fund Management**: The funds in the liquidity pool are used to support derivatives traders' operations. Likwid Protocol manages different sources of funds and liquidity pool characteristics to ensure that liquidity providers can withdraw their funds at any time. The algorithm retains a certain proportion of liquidity reserves to ensure sufficient liquidity is available when users need to withdraw their assets.
+* **Pair liquidity providers** use `LikwidPairPosition` to mint position NFTs backed by token pairs. These positions are exposed to swap activity and the pool's native swap-fee engine.
+* **Single-sided lenders** use `LikwidLendPosition` to supply one asset and earn utilization-driven lending yield through vault accounting.
+* **Insurance-fund donors** can contribute directly to a pool's protection buffer through the vault-facing donate flow.
 
-This mechanism not only improves capital efficiency but also provides a more stable source of income for liquidity providers.
+The vault keeps separate accounting for real reserves, mirror reserves, pair reserves, lend reserves, protocol-interest reserves, and insurance funds. That separation is what allows Likwid to support multiple capital uses with native reserve accounting.
 
 #### Role of Derivatives Traders
 
-The Likwid Protocol offers a unique solution for Derivatives Traders that eliminates the need for counterparties, allowing users to borrow target tokens by collateralizing assets and engaging in derivatives operations. This mechanism is distinct from traditional financial market derivatives methods and offers several advantages:
+Derivatives traders interact with `LikwidMarginPosition`, which issues an NFT for each margin position and records collateral, debt, and accrued state. The vault and manager contracts then coordinate leverage, repayment, closing, and liquidation through native pool accounting.
 
-* **No Counterparty Matching**: Likwid provides funding for derivatives traders through a liquidity pool, allowing users to directly borrow tokens from the pool without needing to wait for a counterparty. This approach significantly enhances trading efficiency and flexibility.
-* **No Oracle Dependence**: Likwid adopts a design without reliance on oracles, thereby avoiding the risks of market manipulation and price tampering. The funds borrowed by derivatives traders and the trading price are derived directly from the state of the liquidity pool, removing the dependency on external price feeds.
-* **Leverage Trading Support**: derivatives traders can obtain leverage by collateralizing base tokens, enabling users to control larger market positions with less capital, thus amplifying potential returns. The protocol's collateral rate and leverage design ensure that users can effectively manage risk while benefiting from leverage.
+* **No counterparty matching**: trades and leveraged borrowing are funded from shared pool reserves instead of bilateral matches.
+* **Native risk controls**: margin fees, dynamic swap fees, liquidation thresholds, and insurance-fund accounting all live inside the protocol's own contracts.
+* **NFT position ownership**: every active pair, lend, or margin position is represented by an NFT rather than a third-party execution primitive.
+* **Bounded price movement references**: Likwid derives internal truncated reserve references from pool state to smooth fee and liquidation calculations.
 
-This counterparty-free and oracle-independent derivatives mechanism provides users with a novel decentralized risk management tool, allowing them to predict and act on market movements without intermediaries. Additionally, Likwid offers a flexible interest rate mechanism that dynamically balances returns and risks between derivatives traders and liquidity providers.
+This design gives users a direct on-chain path to provide liquidity, lend capital, or take leveraged exposure while keeping execution and risk management inside the v2.2 contract system.

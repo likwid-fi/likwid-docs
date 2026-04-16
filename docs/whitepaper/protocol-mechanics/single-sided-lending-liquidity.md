@@ -1,61 +1,56 @@
 ---
 title: "Single-Sided Lending Liquidity"
-description: "*Single-sided lending liquidity (also known as indirect liquidity providing) allows DeFi users to earn yield by depositing a single token into a lending pool.* This mechanism focus"
+description: "Single-sided lending in Likwid v2.2 lets users deposit one asset through LikwidLendPosition, receive a lending-position NFT, and earn utilization-driven yield."
 ---
 
-*Single-sided lending liquidity (also known as **indirect liquidity providing**) allows DeFi users to earn yield by depositing a single token into a lending pool.* This mechanism focuses on interest income from lending, without the complexity of providing two assets or exposure to impermanent loss that traditional liquidity providers face. By separating lending from trading, single-sided liquidity offers a streamlined way to participate in DeFi lending: users supply one asset, and in return earn interest from borrowers, rather than a share of trading fees.
+*Single-sided lending liquidity allows users to earn yield by depositing a single token into a pool through `LikwidLendPosition`.* In v2.2, this flow is NFT-based: the lender receives a lending position NFT, not a separate ERC-20 certificate. Yield accrues through vault accounting and utilization-driven interest.
 
 ### Introduction
 
-Single-sided lending liquidity enables users to deposit **only one type of token** into a liquidity pool and earn yield on it. This deposit serves as one side of liquidity that leveraged traders can borrow against, effectively replacing what would otherwise be a “debt” token in the pool. Unlike standard two-sided liquidity provision (which earns trading fees but incurs impermanent loss risk), single-sided lending focuses solely on lending interest as the source of income. This approach provides an **isolated, lower-risk yield** opportunity for lenders, who are not directly exposed to the price fluctuations between two assets or the impermanent loss that comes with providing a token pair.
+Single-sided lending enables users to deposit **only one type of token** into a pool and earn yield on it. Unlike paired LP provision, this flow is designed around lending interest rather than direct swap-fee exposure. The user's contribution is tracked as a dedicated lending position, and the protocol updates its value through the pool's cumulative deposit accounting.
 
 ### Key Mechanism
 
 **Single Asset Deposit**
 
-Users supply *only one asset* (e.g. Token A) into a dedicated lending pool. They do not need to provide a pairing token, simplifying the process. This one-sided deposit effectively fills the role of the missing counter-asset in a leveraged liquidity position, allowing borrowers to take that asset and trade or leverage it.
+Users supply *only one asset* into a pool through `addLending`. They do not need to provide the paired asset, which simplifies capital deployment for users who want yield on a single token balance.
 
-**Replacement of Debt Tokens**
+**NFT-Based Position Tracking**
 
-**I**n these pools, the user’s deposit replaces pre-minted debt tokens that would otherwise represent the borrowed half of a liquidity pair. In other words, the liquidity pool is initially funded with “placeholder” debt for one side; when a single-sided lender deposits actual Token A, it takes the place of that debt, providing real liquidity for borrowers to use.
+The current implementation tracks lender ownership through an ERC-721 position managed by `LikwidLendPosition`. This NFT identifies the owner and the pool side being lent, while vault-side cumulative accounting determines how much value the position has accrued.
 
-**Liquidity Certificate (Interest-Bearing Token)**
+**Utilization-Driven Yield**
 
-In return for the deposit, the lender receives a **liquidity certificate token** (for example, *lTokenA* if Token A was deposited). This interest-bearing token represents the lender’s stake in the pool and entitles them to their deposited asset plus accrued interest  It functions similarly to Compound’s cTokens or Aave’s aTokens, accruing value as borrowers pay interest.
+Yield is driven by pool utilization. Borrow demand and mirrored exposure affect the borrow rate, and those interest flows are reflected back into lender-facing accounting through cumulative deposit state. This means lenders are paid for making capital available to traders and borrowers, but the mechanism is protocol-native rather than tokenized as a separate interest-bearing ERC-20.
 
 **Dynamic Interest Rate**
 
-The interest rate earned on the deposited asset is **dynamic**, adjusting algorithmically based on supply and demand (utilization) in the pool. This part is same to V1.As more of Token A is borrowed, the borrow rate rises, which in turn increases the lender’s APY; if borrowing demand falls, the rate lowers accordingly .&#x20;
+The interest rate earned on the deposited asset is **dynamic**, adjusting algorithmically based on supply and demand in the pool. As utilization rises, lending yield increases; when utilization falls, the rate softens accordingly.
 
 **Interest-Only Rewards**
 
-Single-sided lenders **do not receive trading fees** from the AMM pool. Their sole source of earnings is the interest paid by borrowers who take their Token A to trade .Lenders avoid the volatility and impermanent loss associated with it, earning a more predictable interest income.
+Single-sided lenders **do not rely on paired LP fee exposure** as their primary source of return. Their earnings come from lending utilization and the vault's own accounting updates, which makes the position easier to reason about than a two-sided LP strategy.
 
 ### **Interaction Between the Lending Pool and the Swap Pool**
 
-By injecting liquidity into the lending pool, priority will be given to ensuring sufficient liquidity in the trading pool. The debt tokens will be swapped out from the trading pool, and once the liquidity in the lending pool is exhausted, available liquidity from the liquidity pool will be consumed. However, when calculating earnings, the borrowable liquidity in the trading pool will also be considered as liquidity in the lending pool. In other words, some liquidity is shared between the trading pool and the lending pool.
+Single-sided lending is not isolated from the rest of the protocol. The vault tracks lend reserves, mirror reserves, pair reserves, and protocol-interest reserves together. That allows lending capital to support borrowing and margin demand while still preserving an explicit accounting boundary for each reserve type.
 
-&#x20;An example is provided below.
+![](/assets/v2/lending-position-flow.svg)
 
-![](/assets/gitbook/spaces-2FdZGvDixUA5eWtjX2MfjG-2Fuploads-2FAfwfocW4Lv11GW9txG4H-2Ffile.excalidraw-ced276a8d6.svg)
-
-The same principle applies when users withdraw liquidity. Whether it's the shared portion or the separate portion in the lending pool, they will be treated with the same priority for withdrawal. In the contract implementation, liquidity will be withdrawn primarily from the lending pool.
+Withdrawals are therefore constrained by available liquidity and current pool utilization. Users can withdraw from their lending position, but heavily utilized pools may have less immediately free liquidity than lightly utilized ones.
 
 ### Tokenization of Deposits
 
-When users deposit into the single-sided pool, they receive a **tokenized claim** on their contribution:
+In v2.2, the user's claim on a single-sided deposit is represented by a **lending position NFT**:
 
-* **Liquidity Certificate Token:** The deposited asset is immediately tokenized into an interest-bearing token (e.g., *lTokenA*). This token is pegged 1:1 to the underlying asset and automatically accrues interest over time . It serves as a receipt for the deposit; for instance, depositing 100 Token A might yield 100 lTokenA initially, and as interest accrues, those 100 lTokenA will be redeemable for >100 Token A.
-* **Accrued Interest and Redemption:** The value of the certificate token grows as borrowers pay interest. Holders of lTokenA can redeem it at any time for their share of the underlying Token A plus any earned interest, **provided there is sufficient liquidity in the pool** to withdraw ([Lending Pools | Tarot](https://docs.tarot.to/tarot-protocol/lending-pools#lending)). The requirement for available liquidity means if nearly all Token A is lent out (high utilization), a lender may need to wait or withdraw partially until some loans are repaid or new Token A liquidity is added. This safeguard ensures the pool remains solvent.
-* **Transferability:** In many implementations, the liquidity certificate tokens are ERC-20 tokens, meaning lenders could potentially transfer or trade their interest-bearing tokens. However, their primary function is to be **redeemed on-demand** for the underlying asset. The dynamic exchange rate (underlying per lToken) increases over time in favor of the lToken holder, reflecting accumulated interest.
+* **Ownership**: the NFT identifies the owner, pool, and direction of the lending position.
+* **Accrued Value**: the amount redeemable from the position changes over time as deposit cumulative values evolve.
+* **Withdrawal Constraints**: redemptions are still limited by available pool liquidity at the time of withdrawal.
 
 ### Role of Single-Sided Lenders
 
 Single-sided lenders play a crucial role in the Likwid ecosystem by providing liquidity in a **controlled, risk-managed way**. Their contributions have several benefits:
 
-* **Isolated, No-IL Liquidity Provision:** They supply liquidity without taking on impermanent loss. By lending one asset instead of providing two, lenders remain exposed only to the asset they deposit (similar to holding it, but now earning yield). This isolation makes the strategy attractive for those who want yield on an asset without the complexity of managing LP token volatility.
-* **Fuel for Leveraged Trading/Yield Farming:** Single-sided deposits provide the **borrowable inventory** that leveraged traders and yield farmers draw upon In essence, lenders are enabling others to take leveraged positions (e.g. borrow Token A to add to an AMM pool or margin trade). This support boosts the overall liquidity and volume in the ecosystem: borrowers can amplify positions, and in return they pay interest to lenders. The relationship is symbiotic — lenders earn passive income, while borrowers gain access to liquidity to execute their strategies.
-* **Predictable Interest-Based Returns:** Lenders earn yield through a straightforward interest mechanism, which can be more predictable than the volatile returns from direct LP positions. Their ROI comes from a **transparent borrowing rate** curve, rather than relying on trading fees which depend on market volume and can fluctuate. While the interest rate itself varies with utilization, the factors affecting it (borrow demand and supply) are observable and governed by the protocol’s rate model — giving lenders a clearer expectation of how their yield will respond to market conditions. This setup can particularly appeal to more conservative DeFi participants seeking stable returns in the same asset they deposit.
-* **Dynamic Stabilization of Liquidity:** By participating in single-sided lending, lenders help **stabilize the broader lending and AMM ecosystem**. As interest rates rise and fall with utilization, lenders adding or removing capital will naturally shift to where returns are highest, distributing liquidity efficiently across markets. This dynamic allocation means that liquidity gets directed to where it’s most needed (higher demand), improving capital efficiency. In Likwid, single-sided pools act as shock absorbers for volatility in borrow demand — high demand pulls in more lenders (drawn by higher APR), while low demand releases liquidity to other opportunities, keeping the system balanced.
-
-###
+* **Single-asset exposure:** They remain exposed to one asset rather than a paired LP mix.
+* **Yield from real protocol demand:** Borrowers and margin traders are the source of lender return.
+* **Vault-level transparency:** The reserve and interest model is visible in protocol state rather than hidden behind a wrapper token.

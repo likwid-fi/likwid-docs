@@ -1,50 +1,51 @@
 ---
 title: "Dynamic Fee Strategy Against MEV and Arbitrage Attacks"
-description: "1. Background: The Threat of MEV and Arbitrage Attacks"
+description: "Likwid v2.2 uses a native dynamic-fee engine based on pair reserves, truncated reserves, and bounded price-reference movement."
 ---
 
-**1. Background: The Threat of MEV and Arbitrage Attacks**
+### 1. Why Dynamic Fees Exist
 
-In decentralized exchanges (DEXs), Miner Extractable Value (MEV) and arbitrage attacks pose critical security challenges. MEV refers to the exploitation by miners or validators to extract excess profits through transaction ordering manipulation (e.g., front-running, sandwich attacks). Arbitrage attacks, on the other hand, exploit transient price discrepancies across markets, enabling attackers to siphon value from liquidity pools via risk-free trades. These behaviors not only harm ordinary users but also risk liquidity drain and systemic trust erosion.
+Large, fast state changes can extract value from liquidity providers when pool prices move materially before the system has time to absorb new information. Likwid v2.2 addresses that problem with a native dynamic-fee engine. The design goal is not to eliminate all MEV or arbitrage, but to make disruptive price movement more expensive when a trade pushes pool state far away from the protocol's bounded price reference.
 
-**2. Core Design Principles of Dynamic Fees**
+### 2. Current v2.2 Design
 
-**Likwid** leverages Uniswap V4’s **Dynamic Fee** feature to implement a responsive transaction cost adjustment mechanism, aiming to deter attacks by compressing arbitrageurs’ profit margins. The core logic includes:
+The fee engine is implemented directly in the protocol's own libraries:
 
-* **Price Deviation Threshold Trigger**: Continuously monitors price volatility in liquidity pools (e.g., via oracles or on-chain data). When a single transaction causes price slippage exceeding a predefined threshold (e.g., 2%), the system flags potential arbitrage activity.
-* **Nonlinear Fee Escalation**: Fee rates adjust dynamically based on the magnitude of price deviation. For instance, fees increase exponentially as slippage rises—ensuring extreme volatility triggers fees high enough to erase arbitrageurs’ expected profits.
-* **Instant Activation and Decay Mechanism**: Fee adjustments take effect immediately upon attack detection, paired with a decay period (e.g., gradual reduction per block) to minimize long-term impact on legitimate user transactions.
+* **`SwapMath.getPriceDegree`** compares live pair reserves against truncated reserves to measure the magnitude of price change implied by the requested trade.
+* **`SwapMath.dynamicFee`** starts from the pool's base LP fee and increases it when the measured degree becomes large enough.
+* **`PriceMath.transferReserves`** updates truncated reserves gradually over time instead of snapping instantly to the new pair state.
+* **`MarginState.priceMoveSpeedPPM`** configures how quickly the truncated reference is allowed to catch up.
 
-$$
-fee= f_{base}*( 10*s)^{3}
-$$
+This gives Likwid an internal reference price band that can react to market movement without claiming reliance on any external extension provider.
 
-&#x20;       **fee**:dynamic fees
+### 3. How the Fee Escalates
 
-&#x20;       **f\_base**: base fee&#x20;
+At a high level, the flow is:
 
-&#x20;   **s**:price slippage
+1. Start from the pool's configured base swap fee.
+2. Estimate how far the requested swap would move the pair away from truncated reserves.
+3. If the move is small, keep the base fee.
+4. If the move is large, increase the effective fee nonlinearly before computing the final output or input amount.
 
-**4. Effectiveness Analysis**
+The practical effect is that trades which create larger reserve dislocations pay a higher marginal fee than trades that stay close to the protocol's bounded price reference.
 
-* **Arbitrage Profit Model Disruption**: Assume a base fee of 0.6%. For a 15 % price slippage, dynamic fees could rise to 2%, slashing arbitrageurs’ net profit from 2.7% to 1%—below most bots’ operational costs (e.g., gas + infrastructure).
-* **MEV Suppression**: Front-running requires upfront high gas costs, while fee volatility introduces profit uncertainty, forcing MEV bots to reassess risk-reward ratios. Certain attack vectors become economically nonviable.
+### 4. Why Truncated Reserves Matter
 
-***
+The dynamic fee system depends on the protocol maintaining two views of price:
 
-**5. Trade-offs and Optimizations**
+* **Pair reserves** reflect the pool's current executable state.
+* **Truncated reserves** reflect a bounded reference that can only move toward the pair at a configured speed.
 
-* **User Experience Safeguards**: Set fee caps (e.g., 5%) and calibrate thresholds to avoid excessive fees during normal market fluctuations. Stablecoin pools may adopt lower sensitivity to slippage.
-* **Off-Chain Computation and On-Chain Verification**: Integrate zero-knowledge proofs (e.g., oracle-attested price volatility) to ensure transparency and resistance to manipulation.
+By charging more when the live state diverges sharply from the bounded reference, the pool can make abrupt price-displacing swaps less attractive than they would be under a flat fee schedule.
 
-***
+### 5. Operational Implications
 
-**6. Case Study: Mitigating a Flash Loan Attack**
+This design has several consequences for users and integrators:
 
-During a flash loan attack targeting Likwid’s stablecoin pool, the attacker attempted to create a 10% price deviation via a large trade. The dynamic fee mechanism detected the anomaly, raising fees from 0.05% to 4.5%. This rendered the attack unprofitable (requiring 1Minfeesvs.a1Minfeesvs.a900K arbitrage window), autonomously neutralizing the threat.
+* **Large reserve-moving trades pay more** than small, low-impact trades.
+* **Margin open/close flows inherit the swap engine** when they need to trade through pool reserves.
+* **Fee behavior is pool-native** and can be reasoned about directly from the vault and math libraries.
 
-***
+### 6. Conclusion
 
-**7. Conclusion**
-
-Likwid’s dynamic fee strategy, powered by Uniswap V4’s programmability, offers proactive defense against MEV and arbitrage attacks. By aligning economic incentives with protocol security, it pioneers a "game-theoretic deterrence" paradigm for DEX design. Future refinements—such as integrating machine learning for volatility prediction and cross-chain data—could further optimize this approach, solidifying dynamic fees as a cornerstone of DeFi security infrastructure.
+Likwid's dynamic-fee strategy is a native part of the v2.2 protocol. It is driven by reserve state, truncated price references, and protocol-controlled movement limits.

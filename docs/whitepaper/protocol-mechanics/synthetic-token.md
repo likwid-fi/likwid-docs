@@ -1,12 +1,17 @@
 ---
 title: "Synthetic Token"
-description: "The derivatives mechanism in Likwid Protocol relies on a special synthetic token y′ or x', which is minted by the Hooks contract when a user opens a short position. we use y'to exp"
+description: "In Likwid v2.2, y′ and x′ are best understood as internal accounting notation for mirrored exposure and debt state, not as standalone external tokens."
 ---
 
-The derivatives mechanism in Likwid Protocol relies on a special synthetic token y′ or x', which is minted by the Hooks contract when a user opens a short position. we use y'to explain, y′ is a synthetic token representing the target token Y, with the following characteristics:
+Earlier Likwid drafts used `y′` or `x′` to describe the mirrored side of a leveraged position. In the current v2.2 implementation, that notation does **not** correspond to a separate user-facing ERC-20 token. Instead, the protocol tracks synthetic exposure through internal vault and position-manager state.
 
-* **Minting Mechanism**: When a user collateralizes the base token X to open a short position, the Hooks contract mints y′ tokens, which serve as the user's short position record within the protocol. These synthetic tokens do not enter the market directly but are instead used as proof of the user's debt obligation.
-* **Debt Record**: The existence of y′ tokens essentially tracks the user’s short debt. Each short position corresponds to a specific amount of y′ tokens, which serves as a record of the user's obligation to the protocol. When a user closes a position, they must return the equivalent amount of Y tokens to burn the corresponding y′ tokens.
-* **Impact on Liquidity Pools**: Although y′ tokens do not circulate in the market, they have a tangible impact on the liquidity pool. When y′ is minted and the short-selling operation is executed, the amount of target tokens Y in the liquidity pool changes, which in turn affects the supply-demand balance. Specifically, the user borrows and sells the target token Y, increasing  the number of (Y + Y′ ) tokens  in the liquidity pool, leading to a price of X increase due to the shift in supply-demand dynamics. Therefore, the short-selling operation not only affects the user's balance sheet but also impacts the pricing in the liquidity pool.
+When this page refers to `y′` or `x′`, it should be read as shorthand for the following v2.2 mechanisms:
 
-This derivatives mechanism, achieved through the use of the synthetic token y′, allows users to conduct short positions without requiring a counterparty, while also ensuring transparency and traceability of the entire operation. Moreover, the design of y′ provides a clear record of the short seller's debt within the protocol, offering double-layered security for both users and the protocol.
+* **Mirror reserves**: the vault maintains mirror-side accounting that represents borrowed or mirrored exposure alongside real reserves and lend reserves.
+* **Margin position state**: `LikwidMarginPosition` stores each position's collateral, debt, and cumulative accounting values.
+* **Position NFT ownership**: the user's claim over an open margin position is represented by an NFT rather than by a freely circulating synthetic token.
+* **Balance-delta settlement**: opening, repaying, closing, and liquidating a position updates pool state through explicit balance deltas instead of by minting an external accounting token.
+
+This keeps the conceptual value of `y′` useful for explaining protocol math, but it avoids suggesting that Likwid v2.2 depends on a separate external execution module or an externally circulating synthetic token contract.
+
+From a user perspective, the important consequence is simple: the protocol still records leveraged debt and mirrored exposure, but that record lives inside the vault and manager contracts rather than in a standalone token.
