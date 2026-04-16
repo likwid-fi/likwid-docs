@@ -9,6 +9,12 @@ const siteMeta = {
 }
 
 const siteUrl = (process.env.DOCS_SITE_URL ?? siteMeta.defaultSiteUrl).replace(/\/$/, '')
+const faviconPath = '/assets/brand-kit/logo-mark.png'
+const siteLogo = {
+  light: '/assets/brand-kit/logo-wordmark-black.png',
+  dark: '/assets/brand-kit/logo-wordmark-white.png',
+  alt: 'likwid.fi'
+}
 
 const searchTranslations = {
   root: {
@@ -269,7 +275,12 @@ export default defineConfig({
   sitemap: {
     hostname: siteUrl
   },
-  head: [['meta', { name: 'theme-color', content: '#346ddb' }]],
+  head: [
+    ['meta', { name: 'theme-color', content: '#346ddb' }],
+    ['link', { rel: 'icon', type: 'image/png', href: faviconPath }],
+    ['link', { rel: 'shortcut icon', type: 'image/png', href: faviconPath }],
+    ['link', { rel: 'apple-touch-icon', href: faviconPath }]
+  ],
   transformHead({ page }) {
     const route = routeForPage(page)
     const canonicalUrl = `${siteUrl}${route === '/' ? '' : route}`
@@ -293,6 +304,7 @@ export default defineConfig({
       title: 'Likwid 文档',
       description: 'Likwid 协议、产品、集成与法务文档。',
       themeConfig: {
+        logo: siteLogo,
         nav: buildNav('zh'),
         sidebar: buildSidebar('zh'),
         outline: {
@@ -318,6 +330,7 @@ export default defineConfig({
     }
   },
   themeConfig: {
+    logo: siteLogo,
     nav: buildNav('en'),
     sidebar: buildSidebar('en'),
     search: {

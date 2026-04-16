@@ -3,6 +3,13 @@ title: "Introduction"
 description: "Likwid v2.2 is a vault-centric leverage and lending protocol built around LikwidVault, position-manager NFTs, native fee controls, and internal risk accounting."
 ---
 
+<div class="docs-home-logo">
+  <picture>
+    <source srcset="/assets/brand-kit/logo-wordmark-white.png" media="(prefers-color-scheme: dark)">
+    <img src="/assets/brand-kit/logo-wordmark-black.png" alt="likwid.fi">
+  </picture>
+</div>
+
 #### Abstract
 
 Likwid v2.2 is a decentralized leverage and lending protocol built around a shared pool model. Instead of matching individual counterparties, liquidity is managed inside `LikwidVault`, while position-manager contracts expose user-facing actions for paired liquidity, single-sided lending, and leveraged margin positions. This architecture keeps execution on-chain and concentrates protocol risk controls in audited pool state and manager logic.

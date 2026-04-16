@@ -19,6 +19,17 @@
   letter-spacing: 0.02em;
 }
 
+.docs-home-logo {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 2rem;
+}
+
+.docs-home-logo img {
+  width: min(320px, 72vw);
+  height: auto;
+}
+
 .VPDoc .custom-block {
   border-radius: 14px;
 }

@@ -3,6 +3,13 @@ title: "简介"
 description: "Likwid v2.2 是一个以 LikwidVault 为核心、围绕仓位 NFT、原生费率控制和内部风险记账构建的杠杆与借贷协议。"
 ---
 
+<div class="docs-home-logo">
+  <picture>
+    <source srcset="/assets/brand-kit/logo-wordmark-white.png" media="(prefers-color-scheme: dark)">
+    <img src="/assets/brand-kit/logo-wordmark-black.png" alt="likwid.fi">
+  </picture>
+</div>
+
 #### 摘要
 
 Likwid v2.2 是一个基于共享池模型的去中心化杠杆与借贷协议。协议不依赖点对点撮合，而是将流动性统一管理在 `LikwidVault` 中，再由各类仓位管理合约向用户提供双边流动性、单边借贷和杠杆保证金等操作入口。这种架构让执行逻辑完全留在链上，并把协议的核心风险控制集中在经过审计的池子状态和管理器逻辑中。
