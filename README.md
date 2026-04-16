@@ -2,6 +2,8 @@
 
 This repository hosts the standalone Likwid documentation site built with VitePress and deployed from GitHub to Cloudflare Pages.
 
+The site supports English and Simplified Chinese. English is the default locale at `/`, and the Chinese edition is served from `/zh/`.
+
 ## Stack
 
 - VitePress for the docs site
@@ -23,6 +25,7 @@ npm run dev
 docs/
   .vitepress/          VitePress config and theme customizations
   public/              Static assets and Cloudflare redirect rules
+  zh/                  Simplified Chinese docs
   whitepaper/          Protocol docs
   tokenomics/
   product/
@@ -49,6 +52,7 @@ If the production domain is not `docs.likwid.fi`, update `DOCS_SITE_URL` in Clou
 ## Content Maintenance
 
 - Add or edit Markdown files inside `docs/`.
+- English content lives at the docs root; Simplified Chinese content lives under `docs/zh/`.
 - Keep binary assets in `docs/public/`.
 - Use root-relative links for shared assets, for example `/assets/brand-kit/...` or `/assets/v2/...`.
 - Run `npm run validate` before opening a PR.
