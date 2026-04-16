@@ -5,71 +5,71 @@ description: "Borrowing Interest Rate Model"
 
 **Borrowing Interest Rate Model**
 
-The Likwid Protocol employs a borrowing interest rate model inspired by the rate mechanism used in Curve Protocol, where the borrowing rate is dynamically adjusted based on the utilization rate of the assets in the liquidity pool. Specifically:
+The Likwid Protocol uses a tiered borrowing rate curve configured through `marginState` in `MarginBase`. The borrow rate increases with utilization so that lightly used pools stay efficient while highly utilized pools become progressively more expensive to borrow from.
 
-**Utilization Rate(if synthetic token is y' )**
+**Utilization Rate**
 
-The **utilization rate** in the Likwid Protocol is defined as the proportion of the synthetic token y′ in the liquidity pool. This rate is used to determine how effectively the available liquidity is being utilized:
+At the contract level, utilization is computed from the pool's mirror reserve relative to the total borrow-side reserve:
 
 $$
-u= \frac {y′} {y′+y}
+u = \frac{\text{mirrorReserve}}{\text{realReserve} + \text{mirrorReserve}}
 $$
+
+This is equivalent to measuring how much of the borrow-side reserve is already mirrored into active debt.
 
 **Interest Rate Calculation**
 
-Likwid Protocol's interest rate calculation is based on a segmented rate curve similar to the model used by Curve Protocol.&#x20;
-
-![](/assets/gitbook/spaces-2FdZGvDixUA5eWtjX2MfjG-2Fuploads-2FGaDqCL2pCez9ufMGt1Df-2Ffile.excalidraw-ce103fb53a.svg)
-
-A **tiered interest rate curve** is used to reflect different utilization phases:
+The implementation in `InterestMath.getBorrowRateByReserves()` applies three cumulative segments:
 
 #### 1. Low Utilization Phase
 
-When the utilization rate is below $U_{\text{low}}$, the interest rate increases linearly:
+When utilization is below $U_{\text{medium}}$, the rate increases linearly from the base rate:
 
 $$
 r = r_{\text{base}} + u \times m_{\text{low}}
 $$
 
-* &#x20;**r\_base** : Base interest rate
-* **u** : Utilization rate
-* **m\_low**: Interest rate slope for low utilization
-* This phase is capped at a maximum interest rate of **r\_max1**
+* **rateBase (`r_base`)**: Base borrow rate.
+* **u**: Utilization rate.
+* **mLow (`m_low`)**: Slope applied before the medium threshold.
 
 ***
 
 #### 2. Medium Utilization Phase
 
-When the utilization rate exceeds $U_{\text{medium}}$, the interest rate increases steadily to reflect market demand:
+Once utilization reaches $U_{\text{medium}}$, the medium slope is added on top of the low-utilization segment:
 
 $$
-r = r_{\text{max1}} + (u - U_{\text{medium}}) \times m_{\text{medium}}
+r = r_{\text{base}} + U_{\text{medium}} \times m_{\text{low}} + (u - U_{\text{medium}}) \times m_{\text{medium}}
 $$
 
-* **m\_medium**: Interest rate slope for medium utilization
-* This phase is capped at **r\_max2**
+* **useMiddleLevel (`U_medium`)**: Medium utilization threshold.
+* **mMiddle (`m_medium`)**: Slope applied between the medium and high thresholds.
 
 ***
 
 #### 3. High Utilization Phase
 
-When the utilization rate exceeds $U_{\text{high}}$, the interest rate grows rapidly to reflect high market demand:
+Above $U_{\text{high}}$, the high-utilization slope is layered on top of both prior segments:
 
 $$
-r = r_{\text{max2}} + (u - U_{\text{high}}) \times m_{\text{high}}
+r = r_{\text{base}} + U_{\text{medium}} \times m_{\text{low}} + (U_{\text{high}} - U_{\text{medium}}) \times m_{\text{medium}} + (u - U_{\text{high}}) \times m_{\text{high}}
 $$
 
-* &#x20;**m\_high:** Interest rate slope for high utilization
+* **useHighLevel (`U_high`)**: High utilization threshold.
+* **mHigh (`m_high`)**: Slope applied once utilization exceeds the high threshold.
 
 ***
 
 ### Default Parameters
 
-| Parameter | Description                        | Default Value |
-| --------- | ---------------------------------- | ------------- |
-| r\_base   | Base interest rate                 | 5%            |
-| m\_low    | Slope for low utilization phase    | 10            |
-| U\_medium | Medium utilization threshold       | 40%           |
-| m\_medium | Slope for medium utilization phase | 100           |
-| U\_high   | High utilization threshold         | 80%           |
-| m\_high   | Slope for high utilization phase   | 10,000        |
+The deployed defaults are initialized in `MarginBase` as raw `marginState` values, where `1,000,000 = 100%`.
+
+| Parameter | Contract field | Description | Default Value |
+| --------- | -------------- | ----------- | ------------- |
+| `r_base` | `rateBase` | Base interest rate | `20000` (2%) |
+| `m_low` | `mLow` | Slope for low utilization phase | `10` |
+| `U_medium` | `useMiddleLevel` | Medium utilization threshold | `300000` (30%) |
+| `m_medium` | `mMiddle` | Slope for medium utilization phase | `100` |
+| `U_high` | `useHighLevel` | High utilization threshold | `700000` (70%) |
+| `m_high` | `mHigh` | Slope for high utilization phase | `10000` |
