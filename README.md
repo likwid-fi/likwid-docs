@@ -30,7 +30,6 @@ docs/
   tokenomics/
   product/
   integration/
-  faq/
   support/
   legal/
 scripts/
@@ -48,6 +47,23 @@ Use these settings when creating the Pages project:
 - Environment variable: `DOCS_SITE_URL=https://docs.likwid.fi`
 
 If the production domain is not `docs.likwid.fi`, update `DOCS_SITE_URL` in Cloudflare Pages.
+
+## Production Launch
+
+1. Push the repository to GitHub with `main` as the production branch.
+2. Confirm GitHub Actions passes on `main`.
+3. Create a Cloudflare Pages project connected to this repository.
+4. Use the Pages settings listed above and set `DOCS_SITE_URL` to the production docs domain.
+5. Validate the preview deployment first, especially `/`, `/zh/`, `/product/faq-innovation-behind-likwid`, and the legacy redirects in `docs/public/_redirects`.
+6. Bind the production custom domain after preview QA passes.
+7. Update the main site, app links, and community links to the new docs domain.
+
+## Preflight Check
+
+- `npm install`
+- `npm run validate`
+- `npm run build`
+- Verify the generated sitemap and redirects under `docs/.vitepress/dist/`
 
 ## Content Maintenance
 

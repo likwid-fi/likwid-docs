@@ -4,4 +4,3 @@ docs/.vitepress/dist
 docs/.vitepress/cache
 reports
 .DS_Store
-scripts/
