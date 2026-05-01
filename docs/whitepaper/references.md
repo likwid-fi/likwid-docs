@@ -4,7 +4,7 @@ description: "Primary references for the current documentation include the Likwi
 ---
 
 1. **Likwid Margin Source Code**: Likwid Finance. *likwid-margin v2.2 contracts and supporting libraries*. <https://github.com/likwid-fi/likwid-margin>
-2. **Likwid Contract Address Registry**: Likwid Finance. *Deployed contract addresses for Base, Ethereum, and Sepolia*. [/product/contract-address](/product/contract-address)
+2. **Likwid Contract Address Registry**: Likwid Finance. *Deployed contract addresses for BNB Chain, Base, Ethereum, and Sepolia*. [/product/contract-address](/product/contract-address)
 3. **Curve Finance Documentation**: Curve Finance. *Interest rate model and protocol documentation*. <https://curve.fi>
 4. **Aave Protocol Documentation**: Aave. *Protocol documentation for utilization-based lending*. <https://docs.aave.com>
 5. **Automated Market Maker Theory**: Buterin, V. *An introduction to automated market makers*. <https://vitalik.ca>
