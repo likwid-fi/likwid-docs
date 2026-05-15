@@ -167,7 +167,7 @@ function buildSidebar(locale: LocaleKey) {
         text: '集成',
         items: [
           { text: '清算指南', link: withLocale(locale, '/integration/liquidation-guide') },
-          { text: 'Likwid 集成手册', link: withLocale(locale, '/integration/likwid-integration-manual') }
+          { text: 'Likwid 标准集成手册', link: withLocale(locale, '/integration/likwid-integration-manual') }
         ]
       },
       {
@@ -249,7 +249,7 @@ function buildSidebar(locale: LocaleKey) {
       text: 'Integration',
       items: [
         { text: 'Liquidation Guide', link: withLocale(locale, '/integration/liquidation-guide') },
-        { text: 'Likwid Integration Manual', link: withLocale(locale, '/integration/likwid-integration-manual') }
+        { text: 'Likwid Standard Integration Manual', link: withLocale(locale, '/integration/likwid-integration-manual') }
       ]
     },
     {
