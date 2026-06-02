@@ -301,10 +301,11 @@ function addMargin(
 | --- | --- | --- |
 | `marginForOne` | `bool` | Position direction, immutable after creation |
 | `leverage` | `uint24` | Leverage, commonly 1-5; 0 indicates non-leveraged borrowing |
-| `marginAmount` | `uint128` | User-supplied margin amount |
-| `borrowAmountMax` | `uint128` | Maximum borrow amount allowed by slippage protection |
-| `deadline` | `uint256` | Transaction expiry time, Unix seconds |
+| `marginAmount` | `uint256` | User-supplied margin amount |
+| `borrowAmount` | `uint256` | Borrow amount; for leveraged margin, the contract calculates the actual borrow amount from the execution path; for non-leveraged borrowing, it is the target borrow amount |
+| `borrowAmountMax` | `uint256` | Maximum borrow amount allowed by slippage protection |
 | `recipient` | `address` | NFT recipient, usually the current user |
+| `deadline` | `uint256` | Transaction expiry time, Unix seconds |
 
 ### 8.3 `margin`
 
@@ -318,9 +319,10 @@ function margin(IMarginPositionManager.MarginParams memory params)
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `tokenId` | `uint256` | Existing NFT id to add margin to |
-| `marginAmount` | `uint128` | Additional margin amount |
 | `leverage` | `uint24` | Leverage for this increment, which may differ from the existing position |
-| `borrowAmountMax` | `uint128` | Slippage protection |
+| `marginAmount` | `uint256` | Additional margin amount |
+| `borrowAmount` | `uint256` | Borrow amount; for leveraged margin, the contract calculates the actual borrow amount from the execution path; for non-leveraged borrowing, it is the target borrow amount |
+| `borrowAmountMax` | `uint256` | Slippage protection |
 | `deadline` | `uint256` | Transaction expiry time |
 
 Before calling `margin()`, confirm `ownerOf(tokenId) == msg.sender` and that cached `(poolId, marginForOne)` matches the target.
@@ -466,6 +468,7 @@ if (activeTokenId === null) {
       marginForOne: targetMarginForOne,
       leverage: Number(leverage),
       marginAmount: inputAmount,
+      borrowAmount,
       borrowAmountMax: borrowMax,
       deadline,
       recipient: user
@@ -477,6 +480,7 @@ if (activeTokenId === null) {
       tokenId: activeTokenId,
       marginAmount: inputAmount,
       leverage: Number(leverage),
+      borrowAmount,
       borrowAmountMax: borrowMax,
       deadline
     }

@@ -305,10 +305,11 @@ function addMargin(
 | --- | --- | --- |
 | `marginForOne` | `bool` | 仓位方向，写入后永久不变 |
 | `leverage` | `uint24` | 杠杆倍数（1–5；0 表示纯借贷，不开杠杆）|
-| `marginAmount` | `uint128` | 用户出的 margin 数量（按 `marginForOne` 计的 token1 或 token0） |
-| `borrowAmountMax` | `uint128` | 允许借入的最大数量（滑点保护，对应 UI 的 Borrow Max Amount） |
-| `deadline` | `uint256` | tx 失效时间（Unix 秒） |
+| `marginAmount` | `uint256` | 用户出的 margin 数量（按 `marginForOne` 计的 token1 或 token0） |
+| `borrowAmount` | `uint256` | 借入数量；杠杆开仓时合约会按成交路径计算实际借入量，纯借贷模式下作为目标借入数量 |
+| `borrowAmountMax` | `uint256` | 允许借入的最大数量（滑点保护，对应 UI 的 Borrow Max Amount） |
 | `recipient` | `address` | NFT 接收地址（通常 `= msg.sender`） |
+| `deadline` | `uint256` | tx 失效时间（Unix 秒） |
 
 ### 5.3 `margin(...)`
 
@@ -324,9 +325,10 @@ function margin(IMarginPositionManager.MarginParams memory params)
 | 字段 | 类型 | 含义 |
 | --- | --- | --- |
 | `tokenId` | `uint256` | 要加仓的已有 NFT id |
-| `marginAmount` | `uint128` | 追加的 margin 数量 |
 | `leverage` | `uint24` | 这次加仓的杠杆（可与原仓不同） |
-| `borrowAmountMax` | `uint128` | 滑点保护 |
+| `marginAmount` | `uint256` | 追加的 margin 数量 |
+| `borrowAmount` | `uint256` | 借入数量；杠杆加仓时合约会按成交路径计算实际借入量，纯借贷模式下作为目标借入数量 |
+| `borrowAmountMax` | `uint256` | 滑点保护 |
 | `deadline` | `uint256` | tx 失效时间 |
 
 > ⚠️ 调 `margin()` 前必须确认 `ownerOf(tokenId) == msg.sender`，且缓存的 `(poolId, marginForOne)` 与目标一致。
@@ -487,6 +489,7 @@ if (activeTokenId === null) {
       marginForOne:    targetMarginForOne,
       leverage:        Number(leverage),
       marginAmount:    inputAmount,
+      borrowAmount,
       borrowAmountMax: borrowMax,
       deadline,
       recipient:       user,
@@ -498,6 +501,7 @@ if (activeTokenId === null) {
     tokenId:         activeTokenId,
     marginAmount:    inputAmount,
     leverage:        Number(leverage),
+    borrowAmount,
     borrowAmountMax: borrowMax,
     deadline,
   }])
