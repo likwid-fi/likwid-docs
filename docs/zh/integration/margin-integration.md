@@ -263,12 +263,13 @@ Margin Level ≈ (2995 × 0.000000015) / 0.000023106 ≈ 1.94
 
 Liq.Price    ≈ (0.000023106 × 1.1) / 2995 ≈ 0.000000008 ETH
 
-Estimated PNL = state.marginTotal
+Estimated PNL = Size(合并后)
               − getAmountIn(poolId, zeroForOne_close=false,
-                            amountOut=state.debtAmount, true).amountIn
-              ≈ 498 - 500.0
-              ≈ −2 LIKWID
-              （负数 = 老仓未实现亏损 ≈ 2 LIKWID）
+                            amountOut=Borrow Amount(合并后), true).amountIn
+              ≈ 1495 − getAmountIn(..., amountOut=0.000023106).amountIn
+              ≈ 1495 - 1500.0
+              ≈ −5 LIKWID
+              （负数 = 合并仓位未实现亏损 ≈ 5 LIKWID）
 ```
 
 After 视图：`Max Slippage` 行 → `Estimated PNL`；`Borrow Max Amount` 行隐藏。

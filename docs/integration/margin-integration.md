@@ -187,11 +187,11 @@ Unrealized PNL can be estimated as:
 
 ```text
 Estimated PNL =
-  state.marginTotal
-  - getAmountIn(poolId, zeroForOne_close, state.debtAmount, true).amountIn
+  Size (merged)
+  - getAmountIn(poolId, zeroForOne_close, Borrow Amount (merged), true).amountIn
 ```
 
-A negative value means the existing position has an unrealized loss.
+Use the merged `Size` and `Borrow Amount` (not the existing position's `state.marginTotal` / `state.debtAmount`). A negative value means the merged position has an unrealized loss.
 
 ## 6. Contract Basis for Margin Level
 
@@ -269,8 +269,10 @@ Liq. Price =
   ~= 0.000000008 ETH
 
 Estimated PNL =
-  498 - getAmountIn(poolId, zeroForOne_close=false, amountOut=0.00000770 ETH, true).amountIn
-  ~= -2 LIKWID
+  Size(merged) - getAmountIn(poolId, zeroForOne_close=false, amountOut=Borrow Amount(merged), true).amountIn
+  = 1495 - getAmountIn(poolId, zeroForOne_close=false, amountOut=0.000023106 ETH, true).amountIn
+  ~= 1495 - 1500
+  ~= -5 LIKWID
 ```
 
 ## 8. Transaction Submission
