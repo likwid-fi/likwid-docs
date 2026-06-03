@@ -274,6 +274,44 @@ Estimated PNL = Size(合并后)
 
 After 视图：`Max Slippage` 行 → `Estimated PNL`；`Borrow Max Amount` 行隐藏。
 
+### 4.6 Max Margin（输入框上限）
+
+Margin 输入框旁的 `MAX` 不应直接取钱包余额。合约对仓位规模有上限，且这个上限**随杠杆升高而收缩**。合理的 `MAX` 是「还能稳过链上校验、且不踩临界点的最大保证金」。
+
+设保证金币种为用户存入的那一侧（`marginForOne = false` → `currency0`；`marginForOne = true` → `currency1`）。链上有两道约束限制仓位规模，都在 `LikwidMarginPosition._margin` / `_executeAddLeverage`：
+
+| # | 约束 | 出处 |
+| --- | --- | --- |
+| (a) 储备硬上限 | `marginAmount × leverage ≤ realReserve[margin]`，否则 `ReservesNotEnough()` | `_executeAddLeverage`（`src/LikwidMarginPosition.sol:183`） |
+| (b) 初始保证金率 | `min(marginLevel(pairReserves), marginLevel(truncatedReserves)) ≥ minMarginLevel()`，否则 `InvalidLevel()` | `_checkMinLevelAfterUnlock`（`src/LikwidMarginPosition.sol:709-721`） |
+
+让上限随杠杆变化的是约束 (b)。`marginLevel` 是 §4.3 的纯 spot 线性公式，但 `Borrow Amount = getAmountIn(...)` 带 AMM 价格冲击。所以当 `Size = marginAmount × leverage` 占储备比例越大，借款增长快于仓位价值，level 就会跌破 `minMarginLevel()`（默认 `1_170_000`，即 1.17）。直接二分逼近这个边界很容易让用户点 `MAX` 时卡在临界点 revert，所以离链用一张**带安全缓冲的经验表**来算上限：
+
+```text
+sizeMax   = min( R_m × leveragePercent(leverage),  realReserve[margin] )   // (b) ∧ (a)
+marginMax = min( sizeMax / leverage,  walletBalance(marginCurrency) )
+```
+
+其中 `R_m` 是保证金侧 pair 储备，`leveragePercent(leverage)` 是对约束 (b) 的离链近似（单位：储备的千分比）：
+
+```solidity
+// 按杠杆索引 1x..5x
+uint24[5] leverageThousandths = [370, 200, 110, 55, 22]; // 37%, 20%, 11%, 5.5%, 2.2%
+```
+
+::: warning
+`leverageThousandths` **不是合约常量** —— 链上没有这张表。它由约束 (b) 的闭式天花板 `1 − minMarginLevel × L/(1+L)`（用 pair 储备、`minMarginLevel = 1.17`，得 `≈[41.5%, 22%, 12.25%, 6.4%, 2.5%]`）再乘约 0.9 安全系数取整得到——比直接用天花板更稳，留了缓冲以吸收 `marginFee`、`getAmountIn` 的 `lpFee`、以及链上实际取 `min(pairReserves, truncatedReserves)`（后者更不利）带来的偏差。`minMarginLevel()` 一旦在合约侧调整，应据此重算该表。
+:::
+
+算例 —— 保证金为 `currency0` 的 2× 仓位：
+
+```text
+PoolStateInfo = LikwidHelper.getPoolStateInfo(poolId)
+
+sizeMax   = min(PoolStateInfo.pairReserve0 × 20%, PoolStateInfo.realReserve0)
+marginMax = min(sizeMax / 2, walletBalance(currency0))
+```
+
 ---
 
 ## 5. 提交交易

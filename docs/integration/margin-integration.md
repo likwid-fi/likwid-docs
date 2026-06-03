@@ -193,6 +193,44 @@ Estimated PNL =
 
 Use the merged `Size` and `Borrow Amount` (not the existing position's `state.marginTotal` / `state.debtAmount`). A negative value means the merged position has an unrealized loss.
 
+### 5.4 Max Margin (Input Cap)
+
+The `MAX` button next to the Margin input should not just be the wallet balance. The contract caps how large a position can be, and that cap **shrinks as leverage rises**. A good `MAX` is the largest margin that comfortably passes on-chain without sitting on the edge.
+
+Let the margin currency be the side the user deposits (`currency0` when `marginForOne = false`, `currency1` when `marginForOne = true`). Two on-chain constraints bound the position size, both in `LikwidMarginPosition._margin` / `_executeAddLeverage`:
+
+| # | Constraint | Source |
+| --- | --- | --- |
+| (a) Reserve cap | `marginAmount * leverage <= realReserve[margin]`, else `ReservesNotEnough()` | `_executeAddLeverage` (`src/LikwidMarginPosition.sol:183`) |
+| (b) Initial margin level | `min(marginLevel(pairReserves), marginLevel(truncatedReserves)) >= minMarginLevel()`, else `InvalidLevel()` | `_checkMinLevelAfterUnlock` (`src/LikwidMarginPosition.sol:709-721`) |
+
+Constraint (b) is what makes the cap leverage-dependent. `marginLevel` is the linear spot formula from section 6, but `Borrow Amount = getAmountIn(...)` carries AMM price impact. So as `Size = marginAmount * leverage` grows relative to the reserve, the borrow grows faster than the position value and the level falls below `minMarginLevel()` (default `1_170_000`, i.e. 1.17). Binary-searching straight to that boundary easily lands a `MAX` order on the critical point and reverts, so the off-chain `MAX` uses a **conservative per-leverage table** with built-in headroom:
+
+```text
+sizeMax   = min( R_m * leveragePercent(leverage),  realReserve[margin] )   // (b) ∧ (a)
+marginMax = min( sizeMax / leverage,  walletBalance(marginCurrency) )
+```
+
+where `R_m` is the margin-side pair reserve and `leveragePercent(leverage)` is an off-chain approximation of constraint (b), in thousandths of the reserve:
+
+```solidity
+// index by leverage 1x..5x
+uint24[5] leverageThousandths = [370, 200, 110, 55, 22]; // 37%, 20%, 11%, 5.5%, 2.2%
+```
+
+::: warning
+`leverageThousandths` is **not** a contract constant — there is no such table on-chain. It is derived from the closed-form ceiling of constraint (b), `1 - minMarginLevel * L/(1+L)` (using pair reserves and `minMarginLevel = 1.17`, giving `≈[41.5%, 22%, 12.25%, 6.4%, 2.5%]`), scaled by ~0.9 for safety. The headroom absorbs `marginFee`, the `lpFee` inside `getAmountIn`, and the fact that the chain actually takes `min(pairReserves, truncatedReserves)` (the latter being less favorable). Recompute the table if `minMarginLevel()` ever changes on-chain.
+:::
+
+Worked example — a 2x position with margin in `currency0`:
+
+```text
+PoolStateInfo = LikwidHelper.getPoolStateInfo(poolId)
+
+sizeMax   = min(PoolStateInfo.pairReserve0 * 20%, PoolStateInfo.realReserve0)
+marginMax = min(sizeMax / 2, walletBalance(currency0))
+```
+
 ## 6. Contract Basis for Margin Level
 
 The contract uses `MarginPosition.marginLevel(...)` in two relevant places:
