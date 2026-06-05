@@ -345,6 +345,15 @@ Regular swaps use dynamic fees in the actual execution path. For production quot
 dynamicFee = true
 ```
 
+#### Return values include the dynamic fee
+
+When `dynamicFee = true`, both return values already account for the dynamic fee:
+
+- **`fee`** (`uint24`, in millionths) — the **effective fee rate** for this swap, i.e. the base LP fee **plus** any dynamic surcharge. For example `3000` = 0.3%, `24000` = 2.4%.
+- **`feeAmount`** (`uint256`) — the **total fee actually charged** on this swap (in the input currency), already including the dynamic component.
+
+The dynamic fee escalates when a trade pushes the price far from the protocol's truncated price reference, following `fee = f_base × (10·s)³` (where `s` is the price deviation). A trade that stays close to the reference keeps the base fee; a large, price-displacing trade pays much more. So always quote with `dynamicFee = true` to see the real cost before swapping — the returned `fee` / `feeAmount` are exactly what the on-chain swap will charge. See [Dynamic Fee Strategy](/whitepaper/risk-management-and-strategies/dynamic-fee-strategy-against-mev-and-arbitrage-attacks) for the full formula and a price-move → fee table.
+
 ## 5. Fee Parameters
 
 `fee` and `marginFee` are both `uint24`. Integrations should use the fee tiers defined by the protocol deployment.

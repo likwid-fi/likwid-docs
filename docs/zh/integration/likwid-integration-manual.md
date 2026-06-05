@@ -345,6 +345,15 @@ function getAmountIn(
 dynamicFee = true
 ```
 
+#### 返回值已包含动态手续费
+
+当 `dynamicFee = true` 时，两个返回值都已计入动态手续费：
+
+- **`fee`**（`uint24`，百万分制）—— 本次 Swap 的**有效手续费率**，即基础 LP 费率**加上**动态加价后的结果。例如 `3000` = 0.3%，`24000` = 2.4%。
+- **`feeAmount`**（`uint256`）—— 本次 Swap **实际支付的总手续费**（计入输入币），同样已包含动态部分。
+
+动态手续费会在交易把价格推离协议的截断参考价较远时急剧上升，遵循 `fee = f_base × (10·s)³`（`s` 为价格偏移幅度）：靠近参考价的交易维持基础费率，大额、扰动价格的交易则贵得多。因此 Swap 前务必用 `dynamicFee = true` 报价来获知真实成本——返回的 `fee` / `feeAmount` 与链上实际收取的完全一致。完整公式与「价格涨幅 → 费率」对照表见《[动态手续费策略](/zh/whitepaper/risk-management-and-strategies/dynamic-fee-strategy-against-mev-and-arbitrage-attacks)》。
+
 ## 5. Fee 参数说明
 
 `fee` 和 `marginFee` 都是 `uint24`。对接时应使用协议约定的费率档位。
