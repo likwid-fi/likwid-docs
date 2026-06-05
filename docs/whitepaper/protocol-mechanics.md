@@ -11,6 +11,7 @@ description: "- Pool Creation\n- Liquidity Provision\n- Margin Position Mechanic
 - [Single-Sided Lending Liquidity](/whitepaper/protocol-mechanics/single-sided-lending-liquidity)
 - [Repayment](/whitepaper/protocol-mechanics/repayment)
 - [Interest Rate Mechanism Design](/whitepaper/protocol-mechanics/interest-rate-mechanism-design)
+- [Margin Level](/whitepaper/protocol-mechanics/margin-level)
 - [Liquidation Mechanism](/whitepaper/protocol-mechanics/liquidation-mechanism)
 - [Insurance Fund Mechanism](/whitepaper/protocol-mechanics/insurance-fund-mechanism)
 - [Handling Exhausted Liquidity in Special Cases](/whitepaper/protocol-mechanics/handling-exhausted-liquidity-in-special-cases)

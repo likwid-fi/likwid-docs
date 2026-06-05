@@ -123,6 +123,7 @@ function buildSidebar(locale: LocaleKey) {
               { text: '单边借贷流动性', link: withLocale(locale, '/whitepaper/protocol-mechanics/single-sided-lending-liquidity') },
               { text: '还款', link: withLocale(locale, '/whitepaper/protocol-mechanics/repayment') },
               { text: '利率机制设计', link: withLocale(locale, '/whitepaper/protocol-mechanics/interest-rate-mechanism-design') },
+              { text: '保证金等级', link: withLocale(locale, '/whitepaper/protocol-mechanics/margin-level') },
               { text: '清算机制', link: withLocale(locale, '/whitepaper/protocol-mechanics/liquidation-mechanism') },
               { text: '保险基金机制', link: withLocale(locale, '/whitepaper/protocol-mechanics/insurance-fund-mechanism') },
               {
@@ -206,6 +207,7 @@ function buildSidebar(locale: LocaleKey) {
             { text: 'Single-Sided Lending Liquidity', link: withLocale(locale, '/whitepaper/protocol-mechanics/single-sided-lending-liquidity') },
             { text: 'Repayment', link: withLocale(locale, '/whitepaper/protocol-mechanics/repayment') },
             { text: 'Interest Rate Mechanism Design', link: withLocale(locale, '/whitepaper/protocol-mechanics/interest-rate-mechanism-design') },
+            { text: 'Margin Level', link: withLocale(locale, '/whitepaper/protocol-mechanics/margin-level') },
             { text: 'Liquidation Mechanism', link: withLocale(locale, '/whitepaper/protocol-mechanics/liquidation-mechanism') },
             { text: 'Insurance Fund Mechanism', link: withLocale(locale, '/whitepaper/protocol-mechanics/insurance-fund-mechanism') },
             {
