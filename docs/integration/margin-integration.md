@@ -421,9 +421,98 @@ Merged positions must use `margin(tokenId, ...)`. Long and short positions in th
 
 After merging, the Review `Entry Price` is the current spot used for the new increment. A true position average entry requires a separate weighted calculation using old and new sizes.
 
-## 10. ABI Quick Reference
+## 10. K-Line Price Feed (Reserve-Diff)
 
-### 10.1 `LikwidHelper`
+To render a price chart, a third party needs a price point for every operation that moves the pool. This section gives a **single uniform recipe** that covers spot swaps and the entire margin family, and that **only requires subscribing to one contract — the Vault (`LikwidVault`)**. You do not need the `Margin` / `Close` / `LiquidateBurn` business events from `LikwidMarginPosition` for this.
+
+### 10.1 Core Idea
+
+The pool price is the `pairReserves` ratio `reserve1 / reserve0`. Every price-moving operation changes `pairReserves`. Instead of decoding each business event's fields, compare `pairReserves` **before vs after** the operation:
+
+```text
+delta price = |Δr0 / Δr1|,  where (Δr0, Δr1) = pairReserves(after) − pairReserves(before)
+```
+
+The before/after price points are each `reserve1 / reserve0` of the respective snapshot.
+
+- All values are raw; the human-readable price = `raw × 10^(decimals0 − decimals1)`.
+- `pairReserves` is a packed `uint256`: high 128 bits = `reserve0`, low 128 bits = `reserve1`.
+- The "before" snapshot is taken **after interest accrual**, so the diff is the **pure operation impact** — interest is excluded automatically.
+
+### 10.2 Events Used (all emitted by `LikwidVault`)
+
+| Event | topic0 | Role |
+| --- | --- | --- |
+| `PoolUpdated` | `0x9f3985fdc4058ca90c3568565aba60632c864d79ac8f29a339bc19e8c2acae1f` | **Before** snapshot (emitted at the start of every operation) |
+| `MarginBalance` | `0xbef2c8944f28e751677e4c2753da54cf97cbba2a249d50ce31a12cb1a2801666` | **After** snapshot for the margin family |
+| `Swap` | `0x9cabf96bbc00f3f126d1b309884416fe322227e57a50b1da86a5e142c78bb696` | The spot-swap delta (`amount0` / `amount1`) |
+| `Fees` | `0x094cd6963c390f036fd04ed00bf2527fc04b980da518b076d245b1218e940c47` | (optional) swap protocol fee, to reconstruct exact post-swap reserves |
+
+`PoolUpdated` is emitted unconditionally at the start of every Vault operation (`_getAndUpdatePool`, `src/LikwidVault.sol:382`). It carries the reserve state after interest accrual and before the operation — the universal "before" basis.
+
+### 10.3 Pairing Rule
+
+1. Filter by `poolId` (event topic1).
+2. Within one tx, sort `PoolUpdated` / `Swap` / `MarginBalance` by `logIndex` ascending.
+3. For each "after" marker (`Swap` or `MarginBalance`), take the **immediately preceding `PoolUpdated`** as the "before" basis.
+4. Always take the immediately preceding one. A single tx (especially via a router) may contain multiple Vault operations — for example a swap followed by a margin — producing several `PoolUpdated` / `Swap` / `MarginBalance` groups. Taking the wrong `PoolUpdated` yields a Δ that is not this operation's.
+
+### 10.4 Swap Use Case
+
+Event order inside `LikwidVault.swap`:
+
+```text
+PoolUpdated   ← before reserves (_getAndUpdatePool)
+Fees          ← if a fee was charged (feeType = SWAP)
+Swap          ← this swap's delta
+```
+
+- **before** `pairReserves` = the immediately preceding `PoolUpdated.pairReserves`.
+- **delta** = `Swap` event `(amount0, amount1)` (caller perspective: paid = negative, received = positive).
+- **delta price** = `|amount0 / amount1|`.
+- **after** `pairReserves` (if you also want the "close" point), reconstruct from the delta:
+  - `zeroForOne` (token0 in, `amount0 < 0`, `amount1 > 0`): `after_r0 = before_r0 + |amount0| − protocolFee0`, `after_r1 = before_r1 − amount1`
+  - `!zeroForOne` (token1 in, `amount0 > 0`, `amount1 < 0`): `after_r0 = before_r0 − amount0`, `after_r1 = before_r1 + |amount1| − protocolFee1`
+  - `protocolFee` = `Fees.protocolFeeAmount` for `feeType = SWAP`, on the input side. Ignoring it gives a negligible charting error.
+
+### 10.5 Margin Use Case
+
+Every margin-family operation (`margin` / `addMargin` / `close` / `repay` / `modify` / `liquidateBurn` / `liquidateCall`) ends up in `LikwidVault.marginBalance`. Event order:
+
+```text
+PoolUpdated     ← before reserves (_getAndUpdatePool)
+Fees            ← margin fee / swap fee / interest fee, if any
+MarginBalance   ← after reserves (operation complete)
+```
+
+- **before** `pairReserves` = the immediately preceding `PoolUpdated.pairReserves`.
+- **after** `pairReserves` = `MarginBalance.pairReserves`.
+- **delta** = `(after_r0 − before_r0, after_r1 − before_r1)`; **delta price** = `|Δr0 / Δr1|`.
+
+Notes:
+
+- One rule covers the whole family — no need to distinguish margin / close / liquidate, and **no need to know `marginForOne`** (the diff carries direction).
+- **Zero-impact operations self-identify**: leverage-0 collateral borrow, plus `repay` / `modify` that do not touch `pairReserves`, produce `Δr0 = Δr1 = 0`. Skip those (no K-line point).
+- `MarginBalance.marginType` (`uint8`) labels the operation, matching the `MarginActions` enum: `0=MARGIN, 1=REPAY, 2=CLOSE, 3=MODIFY, 4=LIQUIDATE_BURN, 5=LIQUIDATE_CALL`.
+
+### 10.6 Event Data Layout
+
+`pairReserves` is a packed `uint256` (high 128 bits = reserve0, low 128 bits = reserve1). Non-indexed field order, where each field occupies one 32-byte word:
+
+- `PoolUpdated(bytes32 indexed id, uint256 realReserves, uint256 mirrorReserves, uint256 pairReserves, uint256 lendReserves, uint256 protocolInterestReserves, int256 insuranceFunds)` → `pairReserves` = word index **2**.
+- `MarginBalance(bytes32 indexed id, uint8 marginType, uint256 realReserves, uint256 mirrorReserves, uint256 pairReserves, uint256 lendReserves, uint256 protocolInterestReserves, int256 insuranceFunds)` → `marginType` = word 0, `pairReserves` = word index **3**.
+- `Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint24 fee)` → `id` = topic1, `sender` = topic2; data: `amount0` = word 0 (int128, sign-extended), `amount1` = word 1, `fee` = word 2.
+- `Fees(bytes32 indexed id, address indexed currency, address indexed sender, uint8 feeType, uint256 feeAmount, uint256 protocolFeeAmount)` → data: `feeType` = word 0, `feeAmount` = word 1, `protocolFeeAmount` = word 2.
+
+Unpack: `reserve0 = pairReserves >> 128`, `reserve1 = pairReserves & ((1 << 128) − 1)`.
+
+::: warning
+Use the same-tx `PoolUpdated` as the "before" basis — never diff against the previous tx's reserves, since interest accrued between txs would be miscounted as price impact.
+:::
+
+## 11. ABI Quick Reference
+
+### 11.1 `LikwidHelper`
 
 | Function | Usage |
 | --- | --- |
@@ -433,7 +522,7 @@ After merging, the Review `Entry Price` is the current spot used for the new inc
 | `getBorrowAPR(poolId, borrowForOne)` | Current borrow APR |
 | `checkMarginPositionLiquidate(tokenId)` | Query whether a position is liquidatable |
 
-### 10.2 `LikwidMarginPosition`
+### 11.2 `LikwidMarginPosition`
 
 | Function | Usage |
 | --- | --- |
@@ -444,7 +533,7 @@ After merging, the Review `Entry Price` is the current spot used for the new inc
 | `marginLevels()` | Read `initLevel`, `liquidateLevel`, and related protocol parameters |
 | `liquidateCall(tokenId, deadline)` | Trigger repayment liquidation |
 
-## 11. End-to-End Pseudocode
+## 12. End-to-End Pseudocode
 
 ```ts
 const userPositions = await indexer.getUserTokenIds(user)

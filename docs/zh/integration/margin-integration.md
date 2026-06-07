@@ -430,6 +430,95 @@ Liquidation Margin Level = marginLevels().liquidateLevel() / 1_000_000
 
 ---
 
+## 7. K 线价格数据（储备 Diff 方案）
+
+三方要画价格图（K 线），需要为每一笔会改变池子价格的操作产出一个价格点。本节给出一套**统一口径**，同时覆盖现货 swap 和整个杠杆家族，且**只需订阅一个合约 —— Vault（`LikwidVault`）**。本方案不需要 `LikwidMarginPosition` 上的 `Margin` / `Close` / `LiquidateBurn` 等业务事件。
+
+### 7.1 核心思想
+
+池子价格 = `pairReserves` 的 `reserve1 / reserve0`。任何会改变价格的操作都会改动 `pairReserves`。不去解析各业务事件的字段，而是直接对比一笔操作**前后**的 `pairReserves`：
+
+```text
+delta 价格 = |Δr0 / Δr1|，其中 (Δr0, Δr1) = pairReserves(操作后) − pairReserves(操作前)
+```
+
+操作前 / 操作后的价格点则各取自其 `reserve1 / reserve0`。
+
+- 上述比值均为 raw 值，真实人类可读价格 = `raw × 10^(decimals0 − decimals1)`。
+- `pairReserves` 是一个打包的 `uint256`：高 128 位 = `reserve0`，低 128 位 = `reserve1`。
+- "操作前"快照取的是**利息结算之后、本次操作之前**的状态，因此 diff 出来的就是**纯操作造成的价格冲击**，自动排除利息。
+
+### 7.2 用到的事件（全部由 `LikwidVault` 发出）
+
+| 事件 | topic0 | 作用 |
+| --- | --- | --- |
+| `PoolUpdated` | `0x9f3985fdc4058ca90c3568565aba60632c864d79ac8f29a339bc19e8c2acae1f` | **操作前**快照（每次操作开头无条件发出） |
+| `MarginBalance` | `0xbef2c8944f28e751677e4c2753da54cf97cbba2a249d50ce31a12cb1a2801666` | 杠杆家族的**操作后**快照 |
+| `Swap` | `0x9cabf96bbc00f3f126d1b309884416fe322227e57a50b1da86a5e142c78bb696` | 现货 swap 的 delta（`amount0` / `amount1`） |
+| `Fees` | `0x094cd6963c390f036fd04ed00bf2527fc04b980da518b076d245b1218e940c47` | （可选）swap 的协议手续费，用于精确还原 swap 后储备 |
+
+`PoolUpdated` 在每一次 Vault 操作开始时（`_getAndUpdatePool`，`src/LikwidVault.sol:382`）**无条件发出**，内容是利息结算之后、本次操作之前的储备 —— 是所有操作通用的"操作前"基准。
+
+### 7.3 事件配对规则
+
+1. 按 `poolId`（事件 topic1）过滤目标池子。
+2. 在**同一笔 tx 内**，按 `logIndex` 升序排列 `PoolUpdated` / `Swap` / `MarginBalance`。
+3. 对每个"操作后"标记事件（`Swap` 或 `MarginBalance`），取**紧挨在它前面的那条 `PoolUpdated`** 作为"操作前"基准。
+4. **务必取"紧邻在前"的那条**：一笔 tx（尤其经路由）可能包含多次 Vault 操作（例如先 swap 再 margin），会出现多组 `PoolUpdated` / `Swap` / `MarginBalance`，取错会得到非本次操作的 Δ。
+
+### 7.4 Swap 用例
+
+`LikwidVault.swap` 内的事件顺序：
+
+```text
+PoolUpdated   ← 操作前储备（_getAndUpdatePool）
+Fees          ← 若收取手续费（feeType = SWAP）
+Swap          ← 本次 swap 的 delta
+```
+
+- **操作前** `pairReserves` = 紧邻在前的 `PoolUpdated.pairReserves`。
+- **delta** = `Swap` 事件的 `(amount0, amount1)`（调用者视角：付出为负、收到为正）。
+- **delta 价格** = `|amount0 / amount1|`。
+- **操作后** `pairReserves`（如需"收盘价"点），用 delta 还原：
+  - `zeroForOne`（token0 换入，`amount0 < 0`、`amount1 > 0`）：`after_r0 = before_r0 + |amount0| − protocolFee0`，`after_r1 = before_r1 − amount1`
+  - `!zeroForOne`（token1 换入，`amount0 > 0`、`amount1 < 0`）：`after_r0 = before_r0 − amount0`，`after_r1 = before_r1 + |amount1| − protocolFee1`
+  - `protocolFee` 取自 `Fees` 事件的 `protocolFeeAmount`（`feeType = SWAP`），币种为换入侧；忽略它带来的画图误差极小。
+
+### 7.5 Margin 用例
+
+所有杠杆家族操作（`margin` / `addMargin` / `close` / `repay` / `modify` / `liquidateBurn` / `liquidateCall`）最终都会走到 `LikwidVault.marginBalance`。事件顺序：
+
+```text
+PoolUpdated     ← 操作前储备（_getAndUpdatePool）
+Fees            ← 保证金费 / swap 费 / 利息费，若有
+MarginBalance   ← 操作后储备（本次操作完成）
+```
+
+- **操作前** `pairReserves` = 紧邻在前的 `PoolUpdated.pairReserves`。
+- **操作后** `pairReserves` = `MarginBalance.pairReserves`。
+- **delta** = `(after_r0 − before_r0, after_r1 − before_r1)`；**delta 价格** = `|Δr0 / Δr1|`。
+
+要点：
+
+- 一条规则覆盖整个家族 —— 无需区分 margin / close / liquidate，也**无需知道 `marginForOne`**（diff 自动体现方向）。
+- **零冲击操作会自动被识别**：`leverage = 0` 的纯抵押借款，以及不动 `pairReserves` 的 `repay` / `modify`，其 `Δr0 = Δr1 = 0` —— 直接跳过，不产生 K 线点。
+- `MarginBalance.marginType`（`uint8`）可用于标注操作类型，对应 `MarginActions` 枚举：`0=MARGIN, 1=REPAY, 2=CLOSE, 3=MODIFY, 4=LIQUIDATE_BURN, 5=LIQUIDATE_CALL`。
+
+### 7.6 事件数据布局
+
+`pairReserves` 为打包的 `uint256`（高 128 位 = reserve0，低 128 位 = reserve1）。各事件非索引数据区的字段顺序（每字段占 1 个 32 字节 word）：
+
+- `PoolUpdated(bytes32 indexed id, uint256 realReserves, uint256 mirrorReserves, uint256 pairReserves, uint256 lendReserves, uint256 protocolInterestReserves, int256 insuranceFunds)` → `pairReserves` = data 第 3 个字段（**word index 2**）。
+- `MarginBalance(bytes32 indexed id, uint8 marginType, uint256 realReserves, uint256 mirrorReserves, uint256 pairReserves, uint256 lendReserves, uint256 protocolInterestReserves, int256 insuranceFunds)` → `marginType` = word 0，`pairReserves` = data 第 4 个字段（**word index 3**）。
+- `Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint24 fee)` → `id` = topic1，`sender` = topic2；data：`amount0` = word 0（int128 补码，需符号扩展），`amount1` = word 1，`fee` = word 2。
+- `Fees(bytes32 indexed id, address indexed currency, address indexed sender, uint8 feeType, uint256 feeAmount, uint256 protocolFeeAmount)` → data：`feeType` = word 0，`feeAmount` = word 1，`protocolFeeAmount` = word 2。
+
+拆包：`reserve0 = pairReserves >> 128`，`reserve1 = pairReserves & ((1 << 128) − 1)`。
+
+> ⚠️ 始终用同一 tx 内的 `PoolUpdated` 做"操作前"基准 —— 不要拿上一笔 tx 的储备来相减，否则两笔之间累积的利息会被错算成价格冲击。
+
+---
+
 ## 附录 A. ABI 速查
 
 ### `LikwidHelper`（`test/utils/LikwidHelper.sol`）
