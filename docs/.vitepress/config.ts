@@ -137,7 +137,7 @@ function buildSidebar(locale: LocaleKey) {
             collapsed: false,
             items: [
               { text: '概览', link: withLocale(locale, '/whitepaper/risk-management-and-strategies') },
-              { text: '截断预言参考', link: withLocale(locale, '/whitepaper/risk-management-and-strategies/truncated-oracles') },
+              { text: '截断价格参考', link: withLocale(locale, '/whitepaper/risk-management-and-strategies/truncated-price') },
               {
                 text: '针对 MEV 与套利攻击的动态费率策略',
                 link: withLocale(locale, '/whitepaper/risk-management-and-strategies/dynamic-fee-strategy-against-mev-and-arbitrage-attacks')
@@ -221,7 +221,7 @@ function buildSidebar(locale: LocaleKey) {
           collapsed: false,
           items: [
             { text: 'Overview', link: withLocale(locale, '/whitepaper/risk-management-and-strategies') },
-            { text: 'Truncated Oracles', link: withLocale(locale, '/whitepaper/risk-management-and-strategies/truncated-oracles') },
+            { text: 'Truncated Price', link: withLocale(locale, '/whitepaper/risk-management-and-strategies/truncated-price') },
             {
               text: 'Dynamic Fee Strategy Against MEV and Arbitrage Attacks',
               link: withLocale(locale, '/whitepaper/risk-management-and-strategies/dynamic-fee-strategy-against-mev-and-arbitrage-attacks')

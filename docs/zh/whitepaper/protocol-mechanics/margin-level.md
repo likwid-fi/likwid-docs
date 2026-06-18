@@ -34,7 +34,7 @@ marginLevel   = repayAmount / debtAmount
 
 这里的换算只用储备比例，不调用 AMM 报价、不扣 LP 手续费、也不计价格冲击，因此口径稳定、便于链上校验。（合约内部以百万分制定点存储该比值，白皮书层面用比值表达即可。）
 
-关键在于换算所用的储备：协议使用 **`truncatedReserves`**（反操纵的截断储备，详见《[截断预言参考](/zh/whitepaper/risk-management-and-strategies/truncated-oracles)》），而不是即时的 pair 储备。这样可以防止攻击者在单笔交易里推高储备来逃避清算，也让前端展示的保证金等级与链上清算判定使用同一份数据、保持对齐。
+关键在于换算所用的储备：协议使用 **`truncatedReserves`**（反操纵的截断储备，详见《[截断价格参考](/zh/whitepaper/risk-management-and-strategies/truncated-price)》），而不是即时的 pair 储备。这样可以防止攻击者在单笔交易里推高储备来逃避清算，也让前端展示的保证金等级与链上清算判定使用同一份数据、保持对齐。
 
 ::: warning
 `Asset Value` 是基于储备的线性换算结果，不含 LP 手续费与价格冲击；`Debt` 是借入本金加上已结算的累计利息。两者都按债务币种计量。

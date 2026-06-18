@@ -1,11 +1,11 @@
 ---
-title: "Truncated Oracles"
+title: "Truncated Price"
 description: "In Likwid v2.2, truncated reserves act as a bounded internal price reference that moves toward pair reserves at a protocol-defined speed."
 ---
 
-In Likwid v2.2, the term "truncated oracle" is best understood as an internal bounded price reference derived from pool reserves. The protocol keeps both live pair reserves and truncated reserves. Over time, truncated reserves move toward the live pair state at a speed limited by `priceMoveSpeedPPM`, preventing the reference from instantly snapping to every short-term reserve shock.
+In Likwid v2.2, **Truncated Price** is an internal bounded price reference derived from pool reserves. The protocol keeps both live pair reserves and truncated reserves. Over time, truncated reserves move toward the live pair state at a speed limited by `priceMoveSpeedPPM`, preventing the reference from instantly snapping to every short-term reserve shock.
 
-![](/assets/whitepaper/truncated-oracles-reference.png)
+![](/assets/whitepaper/truncated-price-reference.png)
 
 For example, if an ETH/USDC pool experiences an abrupt one-block jump, truncated reserves can lag that move intentionally. This means:
 
@@ -20,7 +20,7 @@ This mechanism is internal to the vault's price-protection logic; it is not a th
 To describe how the bounded reference catches up with live market state over time, we use the following conceptual model:
 
 1. **Relative Price Difference**\
-   The percentage deviation between the oracle and actual market price:
+   The percentage deviation between the truncated reference price and actual market price:
 
    $$
    R_p = \frac{|P_o - P_a|}{P_o}

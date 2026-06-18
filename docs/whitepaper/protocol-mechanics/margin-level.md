@@ -34,7 +34,7 @@ marginLevel   = repayAmount / debtAmount
 
 This conversion uses only the reserve ratio — it does not call AMM quotes, does not deduct LP fees, and does not account for price impact. That keeps the measure stable and easy to verify on-chain. (Internally the contract stores this ratio as a millionths fixed-point value; at the whitepaper level the ratio form is sufficient.)
 
-The key detail is which reserves the conversion uses: the protocol uses **`truncatedReserves`** (anti-manipulation truncated reserves; see [Truncated Oracles](/whitepaper/risk-management-and-strategies/truncated-oracles)) rather than instantaneous pair reserves. This prevents an attacker from inflating reserves within a single transaction to dodge liquidation, and it keeps the margin level shown by front-ends aligned with the on-chain liquidation check by using the same data.
+The key detail is which reserves the conversion uses: the protocol uses **`truncatedReserves`** (anti-manipulation truncated reserves; see [Truncated Price](/whitepaper/risk-management-and-strategies/truncated-price)) rather than instantaneous pair reserves. This prevents an attacker from inflating reserves within a single transaction to dodge liquidation, and it keeps the margin level shown by front-ends aligned with the on-chain liquidation check by using the same data.
 
 ::: warning
 `Asset Value` is the result of a reserve-based linear conversion and excludes LP fees and price impact; `Debt` is borrowed principal plus settled accrued interest. Both are measured in the debt currency.

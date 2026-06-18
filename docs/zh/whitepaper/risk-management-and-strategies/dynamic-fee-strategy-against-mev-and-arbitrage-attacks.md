@@ -30,7 +30,7 @@ s = |成交后价格 − 截断参考价| / 截断参考价
 
 合约内部把这个比例存成**百万分制 (PPM)** 的整数 `degree`（即 `degree = s × 1,000,000`，例如 `degree = 200000` 表示偏移 20%），并对 token0 / token1 两个方向各算一次、取较大者。
 
-**为什么对比的是「截断参考价」而不是实时价？** 截断储备 (truncated reserves) 是一条受限的参考线：它只能随时间按 `priceMoved = priceMoveSpeedPPM × timeElapsed²` 的速度向实时价格靠拢（默认 `priceMoveSpeedPPM = 3000`，即每步约 0.3%）。攻击者无法在一两个区块内把参考价瞬间拉高，因此「偏移」始终是相对这条防操纵基准线度量的——这也是动态费率能挡住闪电式价格冲击的关键。更多背景见《[截断预言参考](/zh/whitepaper/risk-management-and-strategies/truncated-oracles)》。
+**为什么对比的是「截断参考价」而不是实时价？** 截断储备 (truncated reserves) 是一条受限的参考线：它只能随时间按 `priceMoved = priceMoveSpeedPPM × timeElapsed²` 的速度向实时价格靠拢（默认 `priceMoveSpeedPPM = 3000`，即每步约 0.3%）。攻击者无法在一两个区块内把参考价瞬间拉高，因此「偏移」始终是相对这条防操纵基准线度量的——这也是动态费率能挡住闪电式价格冲击的关键。更多背景见《[截断价格参考](/zh/whitepaper/risk-management-and-strategies/truncated-price)》。
 
 ## 4. 费率如何随偏移上升
 

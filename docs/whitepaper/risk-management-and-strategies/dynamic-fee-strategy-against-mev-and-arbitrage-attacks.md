@@ -30,7 +30,7 @@ s = |post-swap price − truncated reference price| / truncated reference price
 
 Internally this fraction is stored as a **parts-per-million (PPM)** integer `degree` (i.e. `degree = s × 1,000,000`; for example `degree = 200000` means a 20% deviation), computed for both token0 and token1 directions, taking the larger of the two.
 
-**Why compare against the "truncated reference price" rather than the live price?** Truncated reserves form a bounded reference line: they can only move toward the live price over time, at the rate `priceMoved = priceMoveSpeedPPM × timeElapsed²` (default `priceMoveSpeedPPM = 3000`, i.e. about 0.3% per step). An attacker cannot instantly drag the reference up within a block or two, so the "deviation" is always measured against this anti-manipulation baseline — which is exactly what lets the dynamic fee block flash-style price displacement. See [Truncated Oracles](/whitepaper/risk-management-and-strategies/truncated-oracles) for more background.
+**Why compare against the "truncated reference price" rather than the live price?** Truncated reserves form a bounded reference line: they can only move toward the live price over time, at the rate `priceMoved = priceMoveSpeedPPM × timeElapsed²` (default `priceMoveSpeedPPM = 3000`, i.e. about 0.3% per step). An attacker cannot instantly drag the reference up within a block or two, so the "deviation" is always measured against this anti-manipulation baseline — which is exactly what lets the dynamic fee block flash-style price displacement. See [Truncated Price](/whitepaper/risk-management-and-strategies/truncated-price) for more background.
 
 ## 4. How the Fee Escalates with Deviation
 
