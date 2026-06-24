@@ -36,6 +36,22 @@ Likwid removes both. Because price comes from pool reserves and the only liquidi
 * **No order book.** Longs and shorts execute directly against pool liquidity, so depth scales with the pool.
 * **No counterparty matching.** Borrowing and leverage are funded from the pool's own reserves, not bilateral deals — which means instant, capital-efficient execution.
 
+#### Margin, not Futures
+
+In mature markets, "leveraged long/short" actually exists in two structurally different forms — and which one a protocol implements decides everything about how it works.
+
+* **Futures (perpetuals)** are a *bet*. Longs and shorts are each other's counterparties, so what you hold is a **synthetic position** that never touches the real market — no token is actually bought or sold. Because the derivative is detached from spot, it must rely on an **external oracle / index price** to mark PnL and trigger liquidation. This is the model behind the perpetual-futures venues that dominate on-chain leverage today, and it's what lets them offer very high leverage (10×, 50×, 100×).
+* **Margin** is a *loan*. To go long you borrow the quote asset and **actually buy** the token on the real market; to go short you borrow the token and **actually sell** it. The trade settles for real the moment you lever up, so **the market's own price is your price** — no oracle required. Leverage is correspondingly conservative (typically ≤ ~5×).
+
+**Likwid is Margin — built natively on the AMM pool.** This is what makes everything above possible: there is no oracle and no order book because margin trading happens in a real market to begin with, and here that real market is the token's own liquidity pool. It is a fundamentally different financial primitive from the Futures/perpetuals track — not another perp DEX, but on-chain margin trading as its own category.
+
+|  | Futures (perpetuals) | Margin (Likwid) |
+|---|---|---|
+| **Nature** | A bet — longs and shorts are counterparties | A loan — borrow to trade in the real market |
+| **Touches the real market?** | No — a synthetic position, no actual buy/sell | Yes — leverage settles as a real trade and moves price directly |
+| **Where price comes from** | An external oracle / index price | The market's own price *is* the price — no feed |
+| **Typical leverage** | High (10× / 50× / 100×) | Conservative (≤ ~5×) |
+
 #### How leverage works
 
 Opening a leveraged position is a **real trade against the pool**. To take, say, a 3× long, the protocol borrows the quote asset and buys more of the target with it. That borrowed amount is tracked as a **mirror reserve** (`x'` / `y'`), which expands the pool's effective depth — so your leverage is funded by the pool's own liquidity, not by an outside lender.
